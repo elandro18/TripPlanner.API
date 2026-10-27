@@ -1,0 +1,229 @@
+// Modelo de dados do Trip Planner (SQLite + Prisma).
+//
+// Datas de calendário (`dataInicio`, `dataFim`, `data`) e data-hora de negócio
+// (`partida`, `chegada`, `checkin`, `checkout`) são strings ISO, exatamente como
+// o contrato da API as expõe — evita conversão de fuso no SQLite.
+// Valores monetários são inteiros em centavos; a conversão para reais acontece
+// na borda (repositórios/adapters).
+
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  moduleFormat = "cjs"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Usuario {
+  id        Int      @id @default(autoincrement())
+  nome      String
+  email     String   @unique
+  senhaHash String
+  ativo     Boolean  @default(true)
+  criadoEm  DateTime @default(now())
+
+  viagens Viagem[]
+  listas  Lista[]
+}
+
+model Viagem {
+  id         Int      @id @default(autoincrement())
+  usuarioId  Int
+  nome       String
+  destino    String
+  comDatas   Boolean  @default(true)
+  dataInicio String?
+  dataFim    String?
+  moeda      String   @default("BRL")
+  ativa      Boolean  @default(false)
+  capaUrl    String   @default("")
+  criadaEm   DateTime @default(now())
+
+  usuario   Usuario    @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  destinos  Destino[]
+  dias      Dia[]
+  locais    Local[]
+  passagens Passagem[]
+  hoteis    Hotel[]
+  roteiros  Roteiro[]
+  listas    Lista[]
+
+  @@index([usuarioId, ativa])
+}
+
+model Destino {
+  id         Int     @id @default(autoincrement())
+  viagemId   Int
+  nome       String
+  cidade     String?
+  pais       String?
+  ordem      Int     @default(0)
+  dataInicio String?
+  dataFim    String?
+  lat        Float?
+  lng        Float?
+
+  viagem Viagem @relation(fields: [viagemId], references: [id], onDelete: Cascade)
+  dias   Dia[]
+
+  @@index([viagemId, ordem])
+}
+
+model Dia {
+  id        Int     @id @default(autoincrement())
+  viagemId  Int
+  numero    Int
+  data      String?
+  titulo    String?
+  destinoId Int?
+
+  viagem   Viagem   @relation(fields: [viagemId], references: [id], onDelete: Cascade)
+  destino  Destino? @relation(fields: [destinoId], references: [id], onDelete: SetNull)
+  roteiros Roteiro[]
+
+  @@index([viagemId, numero])
+}
+
+model Local {
+  id                Int     @id @default(autoincrement())
+  viagemId          Int
+  nome              String
+  categoria         String?
+  endereco          String?
+  cidade            String?
+  horarioPrevisto   String?
+  horarioFim        String?
+  horarioAbertura   String?
+  horarioFechamento String?
+  duracaoMin        Int?
+  custoCentavos     Int?
+  observacoes       String?
+  fotoUrl           String?
+  lat               Float?
+  lng               Float?
+  geoStatus         String?
+
+  viagem Viagem @relation(fields: [viagemId], references: [id], onDelete: Cascade)
+
+  @@index([viagemId])
+}
+
+model Passagem {
+  id              Int     @id @default(autoincrement())
+  viagemId        Int
+  tipo            String
+  origem          String
+  destino         String
+  partida         String
+  chegada         String?
+  companhia       String?
+  localizador     String?
+  numeroBilhete   String?
+  passageiro      String?
+  classe          String?
+  terminal        String?
+  assento         String?
+  moeda           String?
+  valorCentavos   Int?
+  documentoHash   String?
+  importadoDe     String?
+
+  viagem Viagem @relation(fields: [viagemId], references: [id], onDelete: Cascade)
+
+  @@index([viagemId])
+  @@index([documentoHash])
+}
+
+model Hotel {
+  id                   Int     @id @default(autoincrement())
+  viagemId             Int
+  nome                 String
+  endereco             String?
+  cidade               String?
+  checkin              String
+  checkout             String
+  valorNoiteCentavos   Int?
+  noites               Int?
+  valorTotalCentavos   Int?
+  codigoReserva        String?
+  fotoUrl              String?
+  lat                  Float?
+  lng                  Float?
+  geoStatus            String?
+
+  viagem Viagem @relation(fields: [viagemId], references: [id], onDelete: Cascade)
+
+  @@index([viagemId])
+}
+
+model Roteiro {
+  id          Int       @id @default(autoincrement())
+  viagemId    Int
+  diaId       Int
+  tipoItem    String
+  itemId      Int
+  ordem       Int       @default(0)
+  inicio      String?
+  fim         String?
+  concluido   Boolean   @default(false)
+  concluidoEm DateTime?
+
+  viagem Viagem @relation(fields: [viagemId], references: [id], onDelete: Cascade)
+  dia    Dia    @relation(fields: [diaId], references: [id], onDelete: Cascade)
+
+  @@unique([diaId, tipoItem, itemId])
+  @@index([viagemId, diaId, ordem])
+}
+
+model Lista {
+  id        Int      @id @default(autoincrement())
+  usuarioId Int
+  viagemId  Int?
+  nome      String
+  categoria String
+  criadaEm  DateTime @default(now())
+
+  usuario Usuario     @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  viagem  Viagem?     @relation(fields: [viagemId], references: [id], onDelete: SetNull)
+  itens   ListaItem[]
+
+  @@index([usuarioId, viagemId])
+}
+
+model ListaItem {
+  id                   Int       @id @default(autoincrement())
+  listaId              Int
+  nome                 String
+  tipo                 String?
+  valorCentavos        Int?
+  valorPrevistoCentavos Int?
+  valorPagoCentavos    Int?
+  pagoEm               DateTime?
+  concluido            Boolean   @default(false)
+  concluidoEm          DateTime?
+  ordem                Int       @default(0)
+  criadaEm             DateTime  @default(now())
+  fotoUrl              String?
+  refeicao             Boolean   @default(false)
+  endereco             String?
+  cidade               String?
+  lat                  Float?
+  lng                  Float?
+  fotoPratoUrl         String?
+  fotoLocalUrl         String?
+  observacoes          String?
+
+  lista Lista @relation(fields: [listaId], references: [id], onDelete: Cascade)
+
+  @@index([listaId, ordem])
+}
+
+model TokenRevogado {
+  jti      String   @id
+  expiraEm DateTime
+  criadoEm DateTime @default(now())
+
+  @@index([expiraEm])
+}

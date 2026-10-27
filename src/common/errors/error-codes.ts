@@ -1,0 +1,62 @@
+/**
+ * Códigos de erro do catálogo (`specs/ERROR_CATALOG.md`).
+ *
+ * O catálogo lista os erros **previstos em contrato**. `ERR-000` é um código
+ * interno de fallback para respostas HTTP não catalogadas (ex.: rota
+ * inexistente) — nunca deve ser usado para erro de negócio.
+ */
+export const CODIGOS_ERRO = {
+  /** Fallback interno para HTTP não catalogado (não consta no ERROR_CATALOG). */
+  NAO_CATALOGADO: 'ERR-000',
+
+  // --- Validação (400) ---
+  CAMPO_OBRIGATORIO: 'ERR-001',
+  NOME_OBRIGATORIO: 'ERR-002',
+  EMAIL_OBRIGATORIO: 'ERR-003',
+  EMAIL_INVALIDO: 'ERR-004',
+  SENHA_OBRIGATORIA: 'ERR-005',
+  DATA_INICIO_OBRIGATORIA: 'ERR-006',
+  DATA_FIM_INVALIDA: 'ERR-007',
+  DESTINO_OBRIGATORIO: 'ERR-008',
+  TIPO_PASSAGEM_INVALIDO: 'ERR-009',
+  CHEGADA_ANTERIOR_PARTIDA: 'ERR-010',
+  VALOR_NEGATIVO: 'ERR-011',
+  CHECKOUT_ANTERIOR_CHECKIN: 'ERR-012',
+  VALOR_TOTAL_OBRIGATORIO: 'ERR-013',
+  TIPO_ITEM_INVALIDO: 'ERR-014',
+  ITEM_REFERENCIADO_OBRIGATORIO: 'ERR-015',
+  PAGINACAO_INVALIDA: 'ERR-016',
+
+  // --- Autenticação e autorização (401/403) ---
+  CREDENCIAIS_INVALIDAS: 'ERR-030',
+  TOKEN_INVALIDO: 'ERR-031',
+  ACESSO_NEGADO: 'ERR-032',
+
+  // --- Negócio (409/422) ---
+  EMAIL_JA_CADASTRADO: 'ERR-040',
+  VIAGEM_ATIVA_DUPLICADA: 'ERR-041',
+  ITEM_JA_NO_DIA: 'ERR-042',
+  ITEM_NAO_PERTENCE_A_VIAGEM: 'ERR-043',
+  CONFLITO_HORARIO: 'ERR-050',
+  ITEM_SEM_DATA: 'ERR-051',
+  CAMPO_OBRIGATORIO_EM_BRANCO: 'ERR-052',
+
+  // --- Recurso (404) ---
+  VIAGEM_NAO_ENCONTRADA: 'ERR-060',
+  DIA_NAO_ENCONTRADO: 'ERR-061',
+  LOCAL_NAO_ENCONTRADO: 'ERR-062',
+  PASSAGEM_NAO_ENCONTRADA: 'ERR-063',
+  HOTEL_NAO_ENCONTRADO: 'ERR-064',
+  CARD_NAO_ENCONTRADO: 'ERR-065',
+  DESTINO_NAO_ENCONTRADO: 'ERR-066',
+  LISTA_NAO_ENCONTRADA: 'ERR-067',
+  ITEM_LISTA_NAO_ENCONTRADO: 'ERR-068',
+
+  // --- Integração e servidor (500/502) ---
+  PLANILHA_INDISPONIVEL: 'ERR-070',
+  MAPAS_INDISPONIVEL: 'ERR-071',
+  ENDERECO_NAO_GEOCODIFICAVEL: 'ERR-072',
+  ERRO_INTERNO: 'ERR-099',
+} as const;
+
+export type CodigoErro = (typeof CODIGOS_ERRO)[keyof typeof CODIGOS_ERRO];
