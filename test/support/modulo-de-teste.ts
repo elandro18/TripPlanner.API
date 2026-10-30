@@ -25,7 +25,7 @@ import { PrismaService } from '../../src/persistencia/prisma/prisma.service';
 import { criarConfigDeTeste } from './config-de-teste';
 import { limparBanco, prismaDeTeste } from './prisma-de-teste';
 
-/** Repositórios Prisma reais, ligados ao banco SQLite temporário. */
+/** Repositórios Prisma reais, ligados ao PostgreSQL em memória (PGlite). */
 export const REPOSITORIOS_PRISMA: Provider[] = [
   { provide: USUARIOS_REPOSITORY, useClass: PrismaUsuariosRepository },
   { provide: VIAGENS_REPOSITORY, useClass: PrismaViagensRepository },
@@ -45,8 +45,9 @@ export interface ContextoDeTeste {
 }
 
 /**
- * Módulo de teste com os repositórios Prisma reais sobre um SQLite temporário.
- * O banco é limpo antes de cada módulo para isolar os cenários.
+ * Módulo de teste com os repositórios Prisma reais sobre um PostgreSQL em
+ * memória (PGlite). O banco é limpo antes de cada módulo para isolar os
+ * cenários.
  */
 export async function criarModuloDeDominio(providers: Provider[]): Promise<ContextoDeTeste> {
   const prisma = await prismaDeTeste();

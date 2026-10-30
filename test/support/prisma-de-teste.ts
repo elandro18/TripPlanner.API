@@ -1,86 +1,76 @@
-import { mkdtempSync, readdirSync, readFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { DatabaseSync } from 'node:sqlite';
+import { PGlite } from '@electric-sql/pglite';
+import { PrismaPGlite } from 'pglite-prisma-adapter';
 import { PrismaService } from '../../src/persistencia/prisma/prisma.service';
 
-let url: string | null = null;
+let pglite: PGlite | null = null;
 let cliente: PrismaService | null = null;
 
 /**
- * Cria (uma vez por processo do Jest) um banco SQLite temporário aplicando as
- * migrations versionadas em `prisma/migrations`.
+ * Sobe (uma vez por arquivo de teste) um PostgreSQL em memória — PGlite, o
+ * Postgres compilado para WASM — e aplica as migrations versionadas em
+ * `prisma/migrations`.
  *
- * Cada arquivo de teste roda em um processo isolado, então cada um recebe um
- * banco próprio — sem interferência entre suítes executadas em paralelo.
+ * O schema agora é PostgreSQL, então não há mais como usar um arquivo SQLite
+ * temporário. Cada arquivo de teste roda em um processo do Jest e recebe o seu
+ * próprio PGlite: sem rede, sem banco compartilhado e sem interferência entre
+ * suítes executadas em paralelo.
  */
-export function prepararBancoDeTeste(): string {
-  if (!url) {
-    const diretorio = mkdtempSync(join(tmpdir(), 'tripplanner-api-'));
-    const arquivo = join(diretorio, 'test.db').replace(/\\/g, '/');
-    url = `file:${arquivo}`;
-    process.env.DATABASE_URL = url;
-
-    aplicarMigracoes(arquivo);
+export async function prepararBancoDeTeste(): Promise<PrismaService> {
+  if (!pglite) {
+    const banco = new PGlite();
+    await banco.waitReady;
+    await aplicarMigracoes(banco);
+    pglite = banco;
   }
 
-  process.env.DATABASE_URL = url;
-  return url;
+  if (!cliente) {
+    cliente = new PrismaService(new PrismaPGlite(pglite));
+    await cliente.$connect();
+  }
+
+  return cliente;
 }
 
-/** Aplica, em ordem, o SQL de cada migration no arquivo informado. */
-function aplicarMigracoes(arquivo: string): void {
+/** Aplica, em ordem, o SQL de cada migration no banco informado. */
+async function aplicarMigracoes(banco: PGlite): Promise<void> {
   const diretorio = join(process.cwd(), 'prisma', 'migrations');
   const pastas = readdirSync(diretorio, { withFileTypes: true })
     .filter((entrada) => entrada.isDirectory())
     .map((entrada) => entrada.name)
     .sort();
 
-  const banco = new DatabaseSync(arquivo);
-  try {
-    for (const pasta of pastas) {
-      const sql = readFileSync(join(diretorio, pasta, 'migration.sql'), 'utf8');
-      banco.exec(sql);
-    }
-  } finally {
-    banco.close();
+  for (const pasta of pastas) {
+    const sql = readFileSync(join(diretorio, pasta, 'migration.sql'), 'utf8');
+    await banco.exec(sql);
   }
 }
 
 /** Cliente Prisma compartilhado pelo arquivo de teste. */
 export async function prismaDeTeste(): Promise<PrismaService> {
-  prepararBancoDeTeste();
-  if (!cliente) {
-    cliente = new PrismaService();
-    await cliente.$connect();
-  }
-  return cliente;
+  return prepararBancoDeTeste();
 }
 
-/** Limpa todas as tabelas respeitando a ordem das FKs. */
+/**
+ * Limpa todas as tabelas respeitando as FKs e reinicia as sequências, para que
+ * cada cenário comece em id 1.
+ */
 export async function limparBanco(prisma: PrismaService): Promise<void> {
-  await prisma.$transaction([
-    prisma.tokenRevogado.deleteMany(),
-    prisma.listaItem.deleteMany(),
-    prisma.lista.deleteMany(),
-    prisma.roteiro.deleteMany(),
-    prisma.hotel.deleteMany(),
-    prisma.passagem.deleteMany(),
-    prisma.local.deleteMany(),
-    prisma.dia.deleteMany(),
-    prisma.destino.deleteMany(),
-    prisma.viagem.deleteMany(),
-    prisma.usuario.deleteMany(),
-  ]);
-  // Reinicia as sequências para que cada cenário comece em id 1.
-  await prisma.$executeRawUnsafe('DELETE FROM sqlite_sequence').catch(() => undefined);
+  await prisma.$executeRawUnsafe(
+    'TRUNCATE TABLE "Usuario", "Viagem", "Destino", "Dia", "Local", "Passagem", "Hotel", "Roteiro", "Lista", "ListaItem", "TokenRevogado" RESTART IDENTITY CASCADE',
+  );
 }
 
-/** Fecha o cliente compartilhado ao fim do arquivo de teste. */
+/** Fecha o cliente compartilhado e o banco em memória ao fim do arquivo de teste. */
 export async function fecharBancoDeTeste(): Promise<void> {
   if (cliente) {
     await cliente.$disconnect();
     cliente = null;
+  }
+  if (pglite) {
+    await pglite.close();
+    pglite = null;
   }
 }
 

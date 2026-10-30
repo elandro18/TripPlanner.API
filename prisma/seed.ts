@@ -1,10 +1,13 @@
 import 'dotenv/config';
-import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
+import { PrismaPg } from '@prisma/adapter-pg';
 import * as bcrypt from 'bcryptjs';
 import { PrismaClient } from '../src/generated/prisma/client';
 
-const url = process.env.DATABASE_URL?.trim() || 'file:./prisma/dev.db';
-const prisma = new PrismaClient({ adapter: new PrismaBetterSqlite3({ url }) });
+const url = process.env.DATABASE_URL?.trim();
+if (!url) {
+  throw new Error('DATABASE_URL é obrigatória para rodar o seed (PostgreSQL).');
+}
+const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString: url }) });
 
 const EMAIL_DEMO = 'demo@tripplanner.local';
 const SENHA_DEMO = 'demo1234';

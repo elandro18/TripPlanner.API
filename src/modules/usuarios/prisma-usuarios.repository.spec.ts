@@ -2,7 +2,7 @@ import { EmailJaCadastradoError } from '../../common/errors/dominio.error';
 import { criarModuloDeDominio, REPOSITORIOS_PRISMA } from '../../../test/support/modulo-de-teste';
 import { USUARIOS_REPOSITORY, UsuariosRepository } from './usuarios.repository';
 
-describe('PrismaUsuariosRepository (TRIP_USUARIO no SQLite)', () => {
+describe('PrismaUsuariosRepository (TRIP_USUARIO no PostgreSQL)', () => {
   let repositorio: UsuariosRepository;
 
   beforeEach(async () => {

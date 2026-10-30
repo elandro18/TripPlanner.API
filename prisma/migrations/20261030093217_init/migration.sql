@@ -1,16 +1,21 @@
+-- CreateSchema
+CREATE SCHEMA IF NOT EXISTS "public";
+
 -- CreateTable
 CREATE TABLE "Usuario" (
-    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "id" SERIAL NOT NULL,
     "nome" TEXT NOT NULL,
     "email" TEXT NOT NULL,
     "senhaHash" TEXT NOT NULL,
     "ativo" BOOLEAN NOT NULL DEFAULT true,
-    "criadoEm" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+    "criadoEm" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "Usuario_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "Viagem" (
-    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "id" SERIAL NOT NULL,
     "usuarioId" INTEGER NOT NULL,
     "nome" TEXT NOT NULL,
     "destino" TEXT NOT NULL,
@@ -20,13 +25,14 @@ CREATE TABLE "Viagem" (
     "moeda" TEXT NOT NULL DEFAULT 'BRL',
     "ativa" BOOLEAN NOT NULL DEFAULT false,
     "capaUrl" TEXT NOT NULL DEFAULT '',
-    "criadaEm" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT "Viagem_usuarioId_fkey" FOREIGN KEY ("usuarioId") REFERENCES "Usuario" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+    "criadaEm" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "Viagem_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "Destino" (
-    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "id" SERIAL NOT NULL,
     "viagemId" INTEGER NOT NULL,
     "nome" TEXT NOT NULL,
     "cidade" TEXT,
@@ -34,26 +40,27 @@ CREATE TABLE "Destino" (
     "ordem" INTEGER NOT NULL DEFAULT 0,
     "dataInicio" TEXT,
     "dataFim" TEXT,
-    "lat" REAL,
-    "lng" REAL,
-    CONSTRAINT "Destino_viagemId_fkey" FOREIGN KEY ("viagemId") REFERENCES "Viagem" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+    "lat" DOUBLE PRECISION,
+    "lng" DOUBLE PRECISION,
+
+    CONSTRAINT "Destino_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "Dia" (
-    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "id" SERIAL NOT NULL,
     "viagemId" INTEGER NOT NULL,
     "numero" INTEGER NOT NULL,
     "data" TEXT,
     "titulo" TEXT,
     "destinoId" INTEGER,
-    CONSTRAINT "Dia_viagemId_fkey" FOREIGN KEY ("viagemId") REFERENCES "Viagem" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
-    CONSTRAINT "Dia_destinoId_fkey" FOREIGN KEY ("destinoId") REFERENCES "Destino" ("id") ON DELETE SET NULL ON UPDATE CASCADE
+
+    CONSTRAINT "Dia_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "Local" (
-    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "id" SERIAL NOT NULL,
     "viagemId" INTEGER NOT NULL,
     "nome" TEXT NOT NULL,
     "categoria" TEXT,
@@ -67,15 +74,16 @@ CREATE TABLE "Local" (
     "custoCentavos" INTEGER,
     "observacoes" TEXT,
     "fotoUrl" TEXT,
-    "lat" REAL,
-    "lng" REAL,
+    "lat" DOUBLE PRECISION,
+    "lng" DOUBLE PRECISION,
     "geoStatus" TEXT,
-    CONSTRAINT "Local_viagemId_fkey" FOREIGN KEY ("viagemId") REFERENCES "Viagem" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+
+    CONSTRAINT "Local_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "Passagem" (
-    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "id" SERIAL NOT NULL,
     "viagemId" INTEGER NOT NULL,
     "tipo" TEXT NOT NULL,
     "origem" TEXT NOT NULL,
@@ -93,12 +101,13 @@ CREATE TABLE "Passagem" (
     "valorCentavos" INTEGER,
     "documentoHash" TEXT,
     "importadoDe" TEXT,
-    CONSTRAINT "Passagem_viagemId_fkey" FOREIGN KEY ("viagemId") REFERENCES "Viagem" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+
+    CONSTRAINT "Passagem_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "Hotel" (
-    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "id" SERIAL NOT NULL,
     "viagemId" INTEGER NOT NULL,
     "nome" TEXT NOT NULL,
     "endereco" TEXT,
@@ -110,15 +119,16 @@ CREATE TABLE "Hotel" (
     "valorTotalCentavos" INTEGER,
     "codigoReserva" TEXT,
     "fotoUrl" TEXT,
-    "lat" REAL,
-    "lng" REAL,
+    "lat" DOUBLE PRECISION,
+    "lng" DOUBLE PRECISION,
     "geoStatus" TEXT,
-    CONSTRAINT "Hotel_viagemId_fkey" FOREIGN KEY ("viagemId") REFERENCES "Viagem" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+
+    CONSTRAINT "Hotel_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "Roteiro" (
-    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "id" SERIAL NOT NULL,
     "viagemId" INTEGER NOT NULL,
     "diaId" INTEGER NOT NULL,
     "tipoItem" TEXT NOT NULL,
@@ -127,54 +137,57 @@ CREATE TABLE "Roteiro" (
     "inicio" TEXT,
     "fim" TEXT,
     "concluido" BOOLEAN NOT NULL DEFAULT false,
-    "concluidoEm" DATETIME,
-    CONSTRAINT "Roteiro_viagemId_fkey" FOREIGN KEY ("viagemId") REFERENCES "Viagem" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
-    CONSTRAINT "Roteiro_diaId_fkey" FOREIGN KEY ("diaId") REFERENCES "Dia" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+    "concluidoEm" TIMESTAMP(3),
+
+    CONSTRAINT "Roteiro_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "Lista" (
-    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "id" SERIAL NOT NULL,
     "usuarioId" INTEGER NOT NULL,
     "viagemId" INTEGER,
     "nome" TEXT NOT NULL,
     "categoria" TEXT NOT NULL,
-    "criadaEm" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT "Lista_usuarioId_fkey" FOREIGN KEY ("usuarioId") REFERENCES "Usuario" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
-    CONSTRAINT "Lista_viagemId_fkey" FOREIGN KEY ("viagemId") REFERENCES "Viagem" ("id") ON DELETE SET NULL ON UPDATE CASCADE
+    "criadaEm" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "Lista_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "ListaItem" (
-    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "id" SERIAL NOT NULL,
     "listaId" INTEGER NOT NULL,
     "nome" TEXT NOT NULL,
     "tipo" TEXT,
     "valorCentavos" INTEGER,
     "valorPrevistoCentavos" INTEGER,
     "valorPagoCentavos" INTEGER,
-    "pagoEm" DATETIME,
+    "pagoEm" TIMESTAMP(3),
     "concluido" BOOLEAN NOT NULL DEFAULT false,
-    "concluidoEm" DATETIME,
+    "concluidoEm" TIMESTAMP(3),
     "ordem" INTEGER NOT NULL DEFAULT 0,
-    "criadaEm" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "criadaEm" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "fotoUrl" TEXT,
     "refeicao" BOOLEAN NOT NULL DEFAULT false,
     "endereco" TEXT,
     "cidade" TEXT,
-    "lat" REAL,
-    "lng" REAL,
+    "lat" DOUBLE PRECISION,
+    "lng" DOUBLE PRECISION,
     "fotoPratoUrl" TEXT,
     "fotoLocalUrl" TEXT,
     "observacoes" TEXT,
-    CONSTRAINT "ListaItem_listaId_fkey" FOREIGN KEY ("listaId") REFERENCES "Lista" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+
+    CONSTRAINT "ListaItem_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "TokenRevogado" (
-    "jti" TEXT NOT NULL PRIMARY KEY,
-    "expiraEm" DATETIME NOT NULL,
-    "criadoEm" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+    "jti" TEXT NOT NULL,
+    "expiraEm" TIMESTAMP(3) NOT NULL,
+    "criadoEm" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "TokenRevogado_pkey" PRIMARY KEY ("jti")
 );
 
 -- CreateIndex
@@ -215,3 +228,39 @@ CREATE INDEX "ListaItem_listaId_ordem_idx" ON "ListaItem"("listaId", "ordem");
 
 -- CreateIndex
 CREATE INDEX "TokenRevogado_expiraEm_idx" ON "TokenRevogado"("expiraEm");
+
+-- AddForeignKey
+ALTER TABLE "Viagem" ADD CONSTRAINT "Viagem_usuarioId_fkey" FOREIGN KEY ("usuarioId") REFERENCES "Usuario"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Destino" ADD CONSTRAINT "Destino_viagemId_fkey" FOREIGN KEY ("viagemId") REFERENCES "Viagem"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Dia" ADD CONSTRAINT "Dia_viagemId_fkey" FOREIGN KEY ("viagemId") REFERENCES "Viagem"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Dia" ADD CONSTRAINT "Dia_destinoId_fkey" FOREIGN KEY ("destinoId") REFERENCES "Destino"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Local" ADD CONSTRAINT "Local_viagemId_fkey" FOREIGN KEY ("viagemId") REFERENCES "Viagem"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Passagem" ADD CONSTRAINT "Passagem_viagemId_fkey" FOREIGN KEY ("viagemId") REFERENCES "Viagem"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Hotel" ADD CONSTRAINT "Hotel_viagemId_fkey" FOREIGN KEY ("viagemId") REFERENCES "Viagem"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Roteiro" ADD CONSTRAINT "Roteiro_viagemId_fkey" FOREIGN KEY ("viagemId") REFERENCES "Viagem"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Roteiro" ADD CONSTRAINT "Roteiro_diaId_fkey" FOREIGN KEY ("diaId") REFERENCES "Dia"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Lista" ADD CONSTRAINT "Lista_usuarioId_fkey" FOREIGN KEY ("usuarioId") REFERENCES "Usuario"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Lista" ADD CONSTRAINT "Lista_viagemId_fkey" FOREIGN KEY ("viagemId") REFERENCES "Viagem"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ListaItem" ADD CONSTRAINT "ListaItem_listaId_fkey" FOREIGN KEY ("listaId") REFERENCES "Lista"("id") ON DELETE CASCADE ON UPDATE CASCADE;

@@ -3,7 +3,7 @@ import { Test } from '@nestjs/testing';
 import request from 'supertest';
 import { AppModule } from '../src/app.module';
 import { configurarApp } from '../src/app.setup';
-import { prismaDeTeste, prepararBancoDeTeste } from './support/prisma-de-teste';
+import { prismaDeTeste } from './support/prisma-de-teste';
 import { PrismaService } from '../src/persistencia/prisma/prisma.service';
 process.env.JWT_SECRET = 'segredo-de-testes-e2e-nao-usar-em-producao';
 process.env.BCRYPT_SALT_ROUNDS = '4';
@@ -27,9 +27,11 @@ describe('Viagens e Dias (e2e) — RN-004 a RN-009, RN-034', () => {
   let contador = 0;
 
   beforeAll(async () => {
-    prepararBancoDeTeste();
     prisma = await prismaDeTeste();
-    const modulo = await Test.createTestingModule({ imports: [AppModule] }).compile();
+    const modulo = await Test.createTestingModule({ imports: [AppModule] })
+      .overrideProvider(PrismaService)
+      .useValue(prisma)
+      .compile();
 
     app = modulo.createNestApplication();
     configurarApp(app);

@@ -4,8 +4,9 @@ import { defineConfig } from 'prisma/config';
 /**
  * Configuração do Prisma CLI (v7).
  *
- * O `DATABASE_URL` aponta para o arquivo SQLite. Em desenvolvimento o padrão é
- * `prisma/dev.db`; os testes sobrescrevem a variável para um arquivo temporário.
+ * O `DATABASE_URL` aponta para o PostgreSQL (Neon). Não há mais fallback para
+ * arquivo SQLite: sem a variável, os comandos que falam com o banco (migrate,
+ * studio, seed) falham. Os testes injetam um PGlite em memória pelo adapter.
  */
 export default defineConfig({
   schema: 'prisma/schema.prisma',
@@ -14,6 +15,6 @@ export default defineConfig({
     seed: 'ts-node --transpile-only prisma/seed.ts',
   },
   datasource: {
-    url: process.env.DATABASE_URL ?? 'file:./prisma/dev.db',
+    url: process.env.DATABASE_URL,
   },
 });

@@ -4,8 +4,9 @@ import request from 'supertest';
 import { AppModule } from '../src/app.module';
 import { configurarApp } from '../src/app.setup';
 import { USUARIOS_REPOSITORY } from '../src/modules/usuarios/usuarios.repository';
+import { PrismaService } from '../src/persistencia/prisma/prisma.service';
 import { InMemoryUsuariosRepository } from './support/in-memory-usuarios.repository';
-import { prepararBancoDeTeste } from './support/prisma-de-teste';
+import { prismaDeTeste } from './support/prisma-de-teste';
 
 process.env.JWT_SECRET = 'segredo-de-testes-e2e-nao-usar-em-producao';
 process.env.BCRYPT_SALT_ROUNDS = '4';
@@ -20,10 +21,12 @@ describe('Autenticação (e2e) — RN-001 a RN-004', () => {
   const repositorio = new InMemoryUsuariosRepository();
 
   beforeAll(async () => {
-    prepararBancoDeTeste();
+    const prisma = await prismaDeTeste();
     const modulo = await Test.createTestingModule({ imports: [AppModule] })
       .overrideProvider(USUARIOS_REPOSITORY)
       .useValue(repositorio)
+      .overrideProvider(PrismaService)
+      .useValue(prisma)
       .compile();
 
     app = modulo.createNestApplication();

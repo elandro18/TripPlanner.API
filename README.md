@@ -4,21 +4,21 @@ Backend do **Trip Planner** — API REST (Node.js + NestJS, TypeScript) que serv
 o frontend do planejador de viagem.
 
 - Base URL dos contratos: `/api/v1`
-- Persistência: **SQLite + Prisma** (dev e produção de instância única)
+- Persistência: **PostgreSQL + Prisma** (Neon; driver adapter `@prisma/adapter-pg`)
 - Autenticação: JWT próprio (e-mail/senha, bcrypt)
 - Documentação de projeto (RDD): `C:\Users\ec64212\Desktop\Branch\Projeto1\TripPlanner`
 
 ## Requisitos
 
-- Node.js **22.5+** (recomendado 24; os testes usam `node:sqlite`)
+- Node.js **20+** (recomendado 24; os testes usam PGlite, um Postgres em WASM)
 - npm 10+
 
 ## Como executar
 
 ```bash
 npm install            # instala as dependências (gera o Prisma Client)
-cp .env.example .env   # ajuste DATABASE_URL/JWT_SECRET
-npm run db:migrate     # cria o banco e aplica as migrations
+cp .env.example .env   # ajuste DATABASE_URL (Postgres) e JWT_SECRET
+npm run db:migrate     # aplica as migrations no banco do DATABASE_URL
 npm run db:seed        # opcional: usuário demo + viagem de exemplo
 npm run start:dev      # sobe em http://localhost:3000/api/v1
 ```
@@ -39,10 +39,10 @@ A autorização informada persiste entre recarregamentos da página.
 
 | Script | Descrição |
 |---|---|
-| `npm run build` | Gera o Prisma Client e compila para `dist/` |
+| `npm run build` | Gera o Prisma Client, aplica as migrations (quando há `DATABASE_URL`) e compila para `dist/` |
 | `npm run start` / `start:dev` | Executa a API (`--watch` no dev) |
 | `npm run start:prod` | Executa o build (`node dist/main`) |
-| `npm run db:migrate` | Cria/aplica migrations (`prisma migrate dev`) |
+| `npm run db:migrate` | Aplica migrations em desenvolvimento (`prisma migrate dev`) |
 | `npm run db:deploy` | Aplica migrations em produção (`prisma migrate deploy`) |
 | `npm run db:push` | Sincroniza o schema sem migration (uso pontual) |
 | `npm run db:seed` | Aplica o seed de desenvolvimento |
@@ -61,16 +61,20 @@ Descritas em `.env.example`:
 | `PORT` | `3000` | Porta HTTP |
 | `API_PREFIX` | `api/v1` | Prefixo global |
 | `CORS_ORIGINS` | `http://localhost:5173` | Origens permitidas (separadas por vírgula) |
-| `DATABASE_URL` | `file:./prisma/dev.db` | Banco SQLite |
+| `DATABASE_URL` | (obrigatório) | Connection string do PostgreSQL (no Neon, a do pooler) |
+| `DATABASE_URL_UNPOOLED` | (opcional) | Connection string direta do Neon, usada pelas migrations no build |
 | `JWT_SECRET` | (dev) | Segredo do JWT — obrigatório em produção |
 | `JWT_EXPIRES_IN` | `1h` | Validade do token |
 | `BCRYPT_SALT_ROUNDS` | `10` | Custo do hash de senha |
+
+> O `.env.example` ainda mostra o exemplo antigo de SQLite: use uma connection
+> string `postgresql://…` (Neon/local) em `DATABASE_URL`.
 
 ## Estrutura
 
 ```
 prisma/
-├── schema.prisma      # modelo de dados (SQLite)
+├── schema.prisma      # modelo de dados (PostgreSQL)
 ├── migrations/        # migrations versionadas
 └── seed.ts            # dados de demonstração
 src/
@@ -90,8 +94,8 @@ src/
 ```
 
 Padrão em camadas `Controller → Service → Repositório (porta + adapter Prisma)`.
-Os testes usam um **SQLite temporário criado a partir das migrations** — sem
-rede e sem banco compartilhado.
+Os testes usam um **PostgreSQL em memória (PGlite) criado a partir das
+migrations** — sem rede e sem banco compartilhado.
 
 **Isolamento por dono (RN-004):** todos os endpoints de domínio exigem Bearer e
 resolvem o dono pelo token; acesso a recurso de outro usuário → `403` (ERR-032),

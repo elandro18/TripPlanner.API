@@ -18,7 +18,7 @@ export interface AppConfig {
   readonly apiPrefix: string;
   /** Origens liberadas no CORS (frontend). */
   readonly corsOrigins: string[];
-  /** Caminho/URL do banco SQLite usado pelo Prisma. */
+  /** URL do PostgreSQL (`DATABASE_URL`), usada pelo driver adapter do Prisma. */
   readonly databaseUrl: string;
   readonly jwt: JwtConfig;
 }
@@ -54,8 +54,8 @@ function lista(valor: string | undefined, padrao: string[]): string[] {
 /**
  * Monta a configuração a partir das variáveis de ambiente.
  *
- * O `DATABASE_URL` aponta para o arquivo SQLite; em desenvolvimento o padrão é
- * `file:./prisma/dev.db` (criado por `npm run db:migrate`).
+ * O `DATABASE_URL` é a connection string do PostgreSQL; não há mais padrão
+ * local (o `PrismaService` falha na subida quando ela não está definida).
  */
 export function carregarConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
   const nodeEnv = texto(env.NODE_ENV, 'development');
@@ -73,7 +73,7 @@ export function carregarConfig(env: NodeJS.ProcessEnv = process.env): AppConfig 
     port: inteiro(env.PORT, 3000, 'PORT'),
     apiPrefix: texto(env.API_PREFIX, 'api/v1'),
     corsOrigins: lista(env.CORS_ORIGINS, ['http://localhost:5173']),
-    databaseUrl: texto(env.DATABASE_URL, 'file:./prisma/dev.db'),
+    databaseUrl: env.DATABASE_URL?.trim() ?? '',
     jwt: {
       secret: jwtSecret && jwtSecret.length > 0 ? jwtSecret : JWT_SECRET_DEV,
       expiresIn: texto(env.JWT_EXPIRES_IN, '1h'),

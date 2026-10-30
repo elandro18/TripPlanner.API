@@ -1,8 +1,8 @@
-// Modelo de dados do Trip Planner (SQLite + Prisma).
+// Modelo de dados do Trip Planner (PostgreSQL + Prisma).
 //
 // Datas de calendário (`dataInicio`, `dataFim`, `data`) e data-hora de negócio
 // (`partida`, `chegada`, `checkin`, `checkout`) são strings ISO, exatamente como
-// o contrato da API as expõe — evita conversão de fuso no SQLite.
+// o contrato da API as expõe — evita conversão de fuso no banco.
 // Valores monetários são inteiros em centavos; a conversão para reais acontece
 // na borda (repositórios/adapters).
 
@@ -13,7 +13,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
 }
 
 model Usuario {

@@ -4,7 +4,7 @@ import request from 'supertest';
 import { AppModule } from '../src/app.module';
 import { configurarApp } from '../src/app.setup';
 import { PrismaService } from '../src/persistencia/prisma/prisma.service';
-import { prismaDeTeste, prepararBancoDeTeste } from './support/prisma-de-teste';
+import { prismaDeTeste } from './support/prisma-de-teste';
 
 process.env.JWT_SECRET = 'segredo-de-testes-e2e-nao-usar-em-producao';
 process.env.BCRYPT_SALT_ROUNDS = '4';
@@ -18,16 +18,18 @@ interface Contexto {
   readonly dias: Array<{ id: number; numeroDia: number; data: string | null }>;
 }
 
-/** Destinos, dias, roteiro e listas pela API (SQLite real). */
+/** Destinos, dias, roteiro e listas pela API (PostgreSQL em memória). */
 describe('Destinos, dias, roteiro e listas (e2e)', () => {
   let app: INestApplication;
   let prisma: PrismaService;
   let contador = 0;
 
   beforeAll(async () => {
-    prepararBancoDeTeste();
     prisma = await prismaDeTeste();
-    const modulo = await Test.createTestingModule({ imports: [AppModule] }).compile();
+    const modulo = await Test.createTestingModule({ imports: [AppModule] })
+      .overrideProvider(PrismaService)
+      .useValue(prisma)
+      .compile();
     app = modulo.createNestApplication();
     configurarApp(app);
     await app.init();
