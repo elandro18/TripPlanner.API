@@ -1,5 +1,5 @@
 import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Post, Put, Query, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { PaginacaoQueryDto } from '../../common/dto/paginacao.dto';
 import { RespostaPaginada } from '../../common/dto/resposta-paginada';
 import { PassagemNaoEncontradaError, ViagemNaoEncontradaError } from '../../common/errors/dominio.error';
@@ -24,6 +24,7 @@ export class PassagensController {
 
   /** §5.1 — `GET /api/v1/viagens/{viagemId}/passagens` (paginação offset). */
   @Get('viagens/:viagemId/passagens')
+  @ApiOperation({ summary: 'Lista as passagens da viagem (paginado)' })
   listar(
     @Param('viagemId', idDeViagem) viagemId: number,
     @Query() paginacao: PaginacaoQueryDto,
@@ -35,6 +36,7 @@ export class PassagensController {
   /** §5.2 — `POST /api/v1/viagens/{viagemId}/passagens` → 201. */
   @Post('viagens/:viagemId/passagens')
   @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: 'Cria uma passagem na viagem' })
   criar(
     @Param('viagemId', idDeViagem) viagemId: number,
     @Body() dto: CriarPassagemDto,
@@ -45,12 +47,14 @@ export class PassagensController {
 
   /** §5.3 — `GET /api/v1/passagens/{id}`. */
   @Get('passagens/:id')
+  @ApiOperation({ summary: 'Consulta uma passagem' })
   buscar(@Param('id', idDePassagem) id: number, @UsuarioAtual() usuario: UsuarioDaRequisicao): Promise<PassagemResponse> {
     return this.passagens.buscar(id, usuario.id);
   }
 
   /** §5.4 — `PUT /api/v1/passagens/{id}`. */
   @Put('passagens/:id')
+  @ApiOperation({ summary: 'Atualiza uma passagem' })
   atualizar(
     @Param('id', idDePassagem) id: number,
     @Body() dto: AtualizarPassagemDto,
@@ -62,6 +66,7 @@ export class PassagensController {
   /** §5.5 — `DELETE /api/v1/passagens/{id}` → 204. */
   @Delete('passagens/:id')
   @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Exclui uma passagem' })
   async excluir(@Param('id', idDePassagem) id: number, @UsuarioAtual() usuario: UsuarioDaRequisicao): Promise<void> {
     await this.passagens.excluir(id, usuario.id);
   }

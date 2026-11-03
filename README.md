@@ -4,84 +4,174 @@ Backend do **Trip Planner** — API REST (Node.js + NestJS, TypeScript) que serv
 o frontend do planejador de viagem.
 
 - Base URL dos contratos: `/api/v1`
-- Persistência: **PostgreSQL + Prisma** (Neon; driver adapter `@prisma/adapter-pg`)
+- Persistência: **PostgreSQL + Prisma** (Postgres local em dev, Neon em produção)
 - Autenticação: JWT próprio (e-mail/senha, bcrypt)
 - Documentação de projeto (RDD): `C:\Users\ec64212\Desktop\Branch\Projeto1\TripPlanner`
+
+> **Documentação de trabalho:** [`doc/`](doc/README.md) — análise do projeto,
+> ambientes, Swagger/health, runbook local, decisões e histórico de alterações.
 
 ## Requisitos
 
 - Node.js **20+** (recomendado 24; os testes usam PGlite, um Postgres em WASM)
 - npm 10+
+- **PostgreSQL 18 local** para rodar a API em desenvolvimento (o Neon é só produção)
 
-## Como executar
+---
 
-```bash
-npm install            # instala as dependências (gera o Prisma Client)
-cp .env.example .env   # ajuste DATABASE_URL (Postgres) e JWT_SECRET
-npm run db:migrate     # aplica as migrations no banco do DATABASE_URL
-npm run db:seed        # opcional: usuário demo + viagem de exemplo
-npm run start:dev      # sobe em http://localhost:3000/api/v1
+## Desenvolvimento (banco local)
+
+### 1. Instalar e configurar
+
+```powershell
+npm install
+npm run db:setup:local
+```
+
+`db:setup:local` é idempotente e faz tudo:
+
+1. pede a senha do superusuário `postgres` (só para criar role/banco);
+2. cria/atualiza o role `tripplanner` com senha aleatória;
+3. cria o banco `tripplanner_dev`;
+4. grava `DATABASE_URL` no `.env` (a senha nunca aparece no terminal);
+5. aplica as migrations e o seed.
+
+> Se preferir fazer manualmente: copie `.env.example` para `.env`, crie o banco e
+> rode `npm run db:migrate:local` + `npm run db:seed:local`.
+
+### 2. Subir
+
+```powershell
+npm run env:check    # confere o ambiente sem imprimir senha
+npm run start:dev    # http://localhost:3000/api/v1
 ```
 
 **Login demo (após o seed):** `demo@tripplanner.local` / `demo1234`.
 
-### Swagger (teste manual da API)
+### 3. Testar pelo Swagger
 
-Com a API rodando, a documentação interativa fica em
-**http://localhost:3000/api/docs** (JSON OpenAPI em `/api/docs-json`).
+Com a API rodando:
 
-1. Execute `POST /api/v1/auth/login` (ou `/auth/registrar`) e copie o `token`.
-2. Clique em **Authorize** e informe o token (sem o prefixo `Bearer`).
+- UI: **http://localhost:3000/api/docs**
+- OpenAPI JSON: **http://localhost:3000/api/docs-json**
 
-A autorização informada persiste entre recarregamentos da página.
+Fluxo:
+
+1. Abra `GET /api/v1/health` → **Try it out** → **Execute**. Deve responder `200`
+   com `banco.status = "ok"` (confirma a conexão com o banco local).
+2. `POST /api/v1/auth/login` com `demo@tripplanner.local` / `demo1234`.
+3. Copie o `token` da resposta.
+4. Clique em **Authorize**, cole o token (sem `Bearer `) e confirme.
+5. Os endpoints protegidos passam a enviar o header automaticamente
+   (`persistAuthorization` mantém o token entre recarregamentos).
+
+### Como o ambiente é resolvido
+
+| `NODE_ENV` | Arquivos carregados | Banco permitido |
+|---|---|---|
+| `development` (padrão) | `.env.local` → `.env.development` → `.env` | **só local** (Neon é bloqueado) |
+| `test` | nenhum (usa PGlite) | — |
+| `production` | **nenhum** (só variáveis do host) | **só remoto** (localhost é bloqueado) |
+
+Regras de segurança aplicadas no boot (ver `src/config/banco-de-dados.ts`):
+
+- `DATABASE_URL` ausente ou inválida → a API **não sobe**, com mensagem acionável.
+- `NODE_ENV=production` + host local → **falha**.
+- `development` + host remoto (Neon) → **falha**, salvo `ALLOW_REMOTE_DB=true`.
+- A senha é sempre mascarada nos logs.
+
+`ALLOW_REMOTE_DB=true` serve para testar o Neon de propósito a partir da máquina
+local. Use com consciência: é o banco de produção.
 
 ### Scripts
 
 | Script | Descrição |
 |---|---|
-| `npm run build` | Gera o Prisma Client, aplica as migrations (quando há `DATABASE_URL`) e compila para `dist/` |
-| `npm run start` / `start:dev` | Executa a API (`--watch` no dev) |
+| `npm run db:setup:local` | Cria role + banco local, grava o `.env`, migra e faz seed |
+| `npm run db:migrate:local` | `prisma migrate dev` (cria migration nova) |
+| `npm run db:seed:local` | Aplica o seed de desenvolvimento |
+| `npm run db:reset:local` | Recria o banco local do zero (apaga dados) e reaplica o seed |
+| `npm run env:check` | Diagnóstico do ambiente (arquivos `.env`, banco, Swagger) |
+| `npm run docs:export` | Gera `openapi.json` para importar no Postman/Insomnia |
+| `npm run start:dev` / `start` | Executa a API (`--watch` no dev) |
+| `npm run build` | `prisma generate` + `migrate deploy` (quando há URL) + `nest build` |
 | `npm run start:prod` | Executa o build (`node dist/main`) |
-| `npm run db:migrate` | Aplica migrations em desenvolvimento (`prisma migrate dev`) |
 | `npm run db:deploy` | Aplica migrations em produção (`prisma migrate deploy`) |
-| `npm run db:push` | Sincroniza o schema sem migration (uso pontual) |
-| `npm run db:seed` | Aplica o seed de desenvolvimento |
 | `npm run db:studio` | Abre o Prisma Studio |
-| `npm test` | Testes unitários/integração de serviços (Jest) |
-| `npm run test:e2e` | Testes HTTP (`supertest`) |
+| `npm test` | Testes unitários/integração (Jest + PGlite) |
+| `npm run test:e2e` | Testes HTTP (`supertest` + PGlite) |
 | `npm run typecheck` | Checagem de tipos de `src/` e `test/` |
 
 ### Variáveis de ambiente
 
-Descritas em `.env.example`:
+Descritas em `.env.example` (dev) e `.env.production.example` (prod):
 
 | Variável | Padrão | Uso |
 |---|---|---|
-| `NODE_ENV` | `development` | Ambiente |
+| `NODE_ENV` | `development` | Ambiente (define arquivos `.env` e validações) |
 | `PORT` | `3000` | Porta HTTP |
 | `API_PREFIX` | `api/v1` | Prefixo global |
 | `CORS_ORIGINS` | `http://localhost:5173` | Origens permitidas (separadas por vírgula) |
-| `DATABASE_URL` | (obrigatório) | Connection string do PostgreSQL (no Neon, a do pooler) |
-| `DATABASE_URL_UNPOOLED` | (opcional) | Connection string direta do Neon, usada pelas migrations no build |
+| `DATABASE_URL` | (obrigatório) | Connection string do PostgreSQL (pooler no Neon) |
+| `DATABASE_URL_UNPOOLED` | (opcional) | Conexão direta do Neon, usada por migrations no build |
+| `PG_POOL_MAX` | `10` | Conexões simultâneas do pool `pg` (3–5 em serverless) |
+| `ALLOW_REMOTE_DB` | `false` | Permite banco remoto em desenvolvimento |
+| `SWAGGER_ENABLED` | `true` fora de prod | Liga/desliga `/api/docs` |
+| `PUBLIC_API_URL` | — | URL publicada em `servers` no OpenAPI |
 | `JWT_SECRET` | (dev) | Segredo do JWT — obrigatório em produção |
 | `JWT_EXPIRES_IN` | `1h` | Validade do token |
 | `BCRYPT_SALT_ROUNDS` | `10` | Custo do hash de senha |
+| `ENV_FILE` | — | Força um único arquivo de env (CI) |
 
-> O `.env.example` ainda mostra o exemplo antigo de SQLite: use uma connection
-> string `postgresql://…` (Neon/local) em `DATABASE_URL`.
+---
+
+## Produção (Neon)
+
+Em `NODE_ENV=production` **nenhum `.env` é lido**: tudo vem do painel do host.
+
+| Variável | Valor |
+|---|---|
+| `NODE_ENV` | `production` |
+| `DATABASE_URL` | connection string **pooled** do Neon (`...-pooler...?sslmode=require`) |
+| `DATABASE_URL_UNPOOLED` | connection string **direta** do Neon (migrations/DDL) |
+| `JWT_SECRET` | segredo forte (`node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"`) |
+| `CORS_ORIGINS` | domínio(s) do frontend |
+| `SWAGGER_ENABLED` | `false` (padrão em produção) |
+| `PUBLIC_API_URL` | URL pública da API (opcional, vai para o OpenAPI) |
+
+O `npm run build` já aplica `prisma migrate deploy` usando a URL **direta**
+(`DATABASE_URL_UNPOOLED`), que é o recomendado no Neon — DDL não passa pelo
+pooler.
+
+Validação pós-deploy: abra `GET https://sua-api/api/v1/health` (público, sem
+Bearer). `banco.status = "ok"` significa que a API está falando com o Neon.
+
+> **Vercel:** a API já inclui o handler serverless (`api/index.ts` +
+> `vercel.json`). Passo a passo completo em
+> [`doc/07-deploy-vercel-neon.md`](doc/07-deploy-vercel-neon.md).
+
+---
 
 ## Estrutura
 
 ```
+api/
+└── index.ts           # entrypoint serverless da Vercel
 prisma/
 ├── schema.prisma      # modelo de dados (PostgreSQL)
 ├── migrations/        # migrations versionadas
 └── seed.ts            # dados de demonstração
+scripts/
+├── setup-local-db.ps1 # provisiona o Postgres local e grava o .env
+├── check-env.ts       # diagnóstico do ambiente
+├── export-openapi.ts  # gera openapi.json
+└── migrate-deploy.js  # migrate deploy no build (prefere a URL direta)
 src/
-├── config/            # configuração por variáveis de ambiente (token APP_CONFIG)
+├── config/            # env em camadas, validação do banco, Swagger
 ├── common/            # erros de domínio, filtro HTTP, paginação, utils
 ├── persistencia/      # PrismaService + binding porta → repositório Prisma
 └── modules/
+    ├── health/        # GET /health (API + banco)
     ├── usuarios/      # TRIP_USUARIO
     ├── auth/          # registro, login, logout e sessão JWT
     ├── viagens/       # viagens, dias e resumo
@@ -95,7 +185,7 @@ src/
 
 Padrão em camadas `Controller → Service → Repositório (porta + adapter Prisma)`.
 Os testes usam um **PostgreSQL em memória (PGlite) criado a partir das
-migrations** — sem rede e sem banco compartilhado.
+migrations** — sem rede, sem banco compartilhado e sem tocar o banco local.
 
 **Isolamento por dono (RN-004):** todos os endpoints de domínio exigem Bearer e
 resolvem o dono pelo token; acesso a recurso de outro usuário → `403` (ERR-032),
@@ -103,6 +193,11 @@ exceto listas (404 para não revelar a existência).
 **Paginação offset:** `page` (base 0) e `size` (padrão 20, máx. 100).
 
 ## Endpoints
+
+### Saúde
+| Método | Rota | Descrição |
+|---|---|---|
+| `GET` | `/health` | API + conexão com o banco (200/503), público |
 
 ### Autenticação
 | Método | Rota | Descrição |

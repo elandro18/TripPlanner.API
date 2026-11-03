@@ -10,7 +10,7 @@ import {
   Put,
   UseGuards,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { DiaNaoEncontradoError, ViagemNaoEncontradaError } from '../../common/errors/dominio.error';
 import { IdParamPipe } from '../../common/pipes/id-param.pipe';
 import { UsuarioDaRequisicao } from '../auth/auth.types';
@@ -37,6 +37,7 @@ export class DiasController {
   constructor(private readonly dias: DiasService) {}
 
   @Get('viagens/:viagemId/dias')
+  @ApiOperation({ summary: 'Lista os dias (colunas do Kanban) da viagem' })
   listar(
     @Param('viagemId', idDeViagem) viagemId: number,
     @UsuarioAtual() usuario: UsuarioDaRequisicao,
@@ -46,6 +47,7 @@ export class DiasController {
 
   @Post('viagens/:viagemId/dias')
   @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: 'Cria um dia manual na viagem' })
   criar(
     @Param('viagemId', idDeViagem) viagemId: number,
     @Body() dto: CriarDiaDto,
@@ -55,6 +57,7 @@ export class DiasController {
   }
 
   @Get('dias/:id')
+  @ApiOperation({ summary: 'Consulta um dia' })
   buscar(
     @Param('id', idDeDia) id: number,
     @UsuarioAtual() usuario: UsuarioDaRequisicao,
@@ -63,6 +66,7 @@ export class DiasController {
   }
 
   @Put('dias/:id')
+  @ApiOperation({ summary: 'Atualiza o dia (número, data, título ou destino)' })
   atualizar(
     @Param('id', idDeDia) id: number,
     @Body() dto: AtualizarDiaDto,
@@ -73,6 +77,7 @@ export class DiasController {
 
   @Delete('dias/:id')
   @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Exclui o dia e os cards de roteiro vinculados' })
   async excluir(
     @Param('id', idDeDia) id: number,
     @UsuarioAtual() usuario: UsuarioDaRequisicao,

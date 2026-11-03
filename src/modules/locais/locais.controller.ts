@@ -1,5 +1,5 @@
 import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Post, Put, Query, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { PaginacaoQueryDto } from '../../common/dto/paginacao.dto';
 import { RespostaPaginada } from '../../common/dto/resposta-paginada';
 import { LocalNaoEncontradoError, ViagemNaoEncontradaError } from '../../common/errors/dominio.error';
@@ -24,6 +24,7 @@ export class LocaisController {
 
   /** §4.1 — `GET /api/v1/viagens/{viagemId}/locais` (paginação offset). */
   @Get('viagens/:viagemId/locais')
+  @ApiOperation({ summary: 'Lista os locais da viagem (paginado)' })
   listar(
     @Param('viagemId', idDeViagem) viagemId: number,
     @Query() paginacao: PaginacaoQueryDto,
@@ -35,6 +36,7 @@ export class LocaisController {
   /** §4.2 — `POST /api/v1/viagens/{viagemId}/locais` → 201. */
   @Post('viagens/:viagemId/locais')
   @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: 'Cria um local na viagem' })
   criar(
     @Param('viagemId', idDeViagem) viagemId: number,
     @Body() dto: CriarLocalDto,
@@ -45,12 +47,14 @@ export class LocaisController {
 
   /** §4.3 — `GET /api/v1/locais/{id}`. */
   @Get('locais/:id')
+  @ApiOperation({ summary: 'Consulta um local' })
   buscar(@Param('id', idDeLocal) id: number, @UsuarioAtual() usuario: UsuarioDaRequisicao): Promise<LocalResponse> {
     return this.locais.buscar(id, usuario.id);
   }
 
   /** §4.4 — `PUT /api/v1/locais/{id}`. */
   @Put('locais/:id')
+  @ApiOperation({ summary: 'Atualiza um local' })
   atualizar(
     @Param('id', idDeLocal) id: number,
     @Body() dto: AtualizarLocalDto,
@@ -62,6 +66,7 @@ export class LocaisController {
   /** §4.5 — `DELETE /api/v1/locais/{id}` → 204. */
   @Delete('locais/:id')
   @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Exclui um local' })
   async excluir(@Param('id', idDeLocal) id: number, @UsuarioAtual() usuario: UsuarioDaRequisicao): Promise<void> {
     await this.locais.excluir(id, usuario.id);
   }

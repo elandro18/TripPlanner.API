@@ -14,7 +14,12 @@ export function configurarApp(app: INestApplication): void {
   const config = app.get<AppConfig>(APP_CONFIG);
 
   app.setGlobalPrefix(config.apiPrefix);
-  configurarSwagger(app);
+
+  // O Swagger é ligado por padrão fora de produção (SWAGGER_ENABLED).
+  if (config.swaggerEnabled) {
+    configurarSwagger(app, config);
+  }
+
   app.enableCors({
     origin: config.corsOrigins,
     credentials: true,

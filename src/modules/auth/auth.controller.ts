@@ -1,5 +1,5 @@
 import { Body, Controller, Get, HttpCode, HttpStatus, Post, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { AuthResponse, UsuarioAutenticadoResponse, UsuarioDaRequisicao } from './auth.types';
 import { UsuarioAtual } from './decorators/usuario-atual.decorator';
@@ -21,6 +21,7 @@ export class AuthController {
   /** §1.1 — `POST /api/v1/auth/registrar` → 201 `{ id, nome, email, token }` (RN-001). */
   @Post('registrar')
   @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: 'Cadastra um usuário e devolve o token' })
   registrar(@Body() dto: RegistrarDto): Promise<AuthResponse> {
     return this.auth.registrar(dto);
   }
@@ -28,6 +29,7 @@ export class AuthController {
   /** §1.2 — `POST /api/v1/auth/login` → 200 `{ id, nome, email, token }` (RN-002). */
   @Post('login')
   @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Autentica com e-mail e senha e devolve o token' })
   login(@Body() dto: LoginDto): Promise<AuthResponse> {
     return this.auth.login(dto);
   }
@@ -36,6 +38,7 @@ export class AuthController {
   @Post('logout')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiBearerAuth('bearer')
+  @ApiOperation({ summary: 'Encerra a sessão revogando o token atual' })
   @UseGuards(JwtAuthGuard)
   async logout(@UsuarioAtual() usuario: UsuarioDaRequisicao): Promise<void> {
     await this.auth.logout(usuario.jti, usuario.exp);
@@ -44,6 +47,7 @@ export class AuthController {
   /** §1.4 — `GET /api/v1/auth/me` → 200 `{ id, nome, email, ativo }`. */
   @Get('me')
   @ApiBearerAuth('bearer')
+  @ApiOperation({ summary: 'Retorna o usuário autenticado' })
   @UseGuards(JwtAuthGuard)
   me(@UsuarioAtual() usuario: UsuarioDaRequisicao): Promise<UsuarioAutenticadoResponse> {
     return this.auth.usuarioAutenticado(usuario.id);

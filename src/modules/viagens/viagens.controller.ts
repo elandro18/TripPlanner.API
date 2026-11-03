@@ -1,5 +1,5 @@
 import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Post, Put, Query, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { PaginacaoQueryDto } from '../../common/dto/paginacao.dto';
 import { RespostaPaginada } from '../../common/dto/resposta-paginada';
 import { ViagemNaoEncontradaError } from '../../common/errors/dominio.error';
@@ -26,6 +26,7 @@ export class ViagensController {
 
   /** §2.1 — `GET /api/v1/viagens` (paginação offset). */
   @Get()
+  @ApiOperation({ summary: 'Lista as viagens do usuário (paginado)' })
   listar(
     @Query() paginacao: PaginacaoQueryDto,
     @UsuarioAtual() usuario: UsuarioDaRequisicao,
@@ -36,12 +37,14 @@ export class ViagensController {
   /** §2.2 — `POST /api/v1/viagens` → 201 (dias gerados — RN-034). */
   @Post()
   @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: 'Cria uma viagem (gera os dias quando há período)' })
   criar(@Body() dto: CriarViagemDto, @UsuarioAtual() usuario: UsuarioDaRequisicao): Promise<ViagemResponse> {
     return this.viagens.criar(dto, usuario.id);
   }
 
   /** Resumo de orçamento/progresso — `GET /viagens/{id}/resumo`. */
   @Get(':id/resumo')
+  @ApiOperation({ summary: 'Resumo de orçamento e progresso da viagem' })
   resumo(
     @Param('id', idDeViagem) id: number,
     @UsuarioAtual() usuario: UsuarioDaRequisicao,
@@ -51,12 +54,14 @@ export class ViagensController {
 
   /** §2.3 — `GET /api/v1/viagens/{id}`. */
   @Get(':id')
+  @ApiOperation({ summary: 'Consulta uma viagem' })
   buscar(@Param('id', idDeViagem) id: number, @UsuarioAtual() usuario: UsuarioDaRequisicao): Promise<ViagemResponse> {
     return this.viagens.buscar(id, usuario.id);
   }
 
   /** §2.4 — `PUT /api/v1/viagens/{id}` (altera o período → regenera os dias). */
   @Put(':id')
+  @ApiOperation({ summary: 'Atualiza a viagem (mudar o período regenera os dias)' })
   atualizar(
     @Param('id', idDeViagem) id: number,
     @Body() dto: AtualizarViagemDto,
@@ -67,6 +72,7 @@ export class ViagensController {
 
   /** Troca a viagem ativa do usuário (RN-006) — `PUT /viagens/{id}/ativa`. */
   @Put(':id/ativa')
+  @ApiOperation({ summary: 'Define a viagem como ativa do usuário' })
   ativar(
     @Param('id', idDeViagem) id: number,
     @UsuarioAtual() usuario: UsuarioDaRequisicao,
@@ -77,6 +83,7 @@ export class ViagensController {
   /** §2.5 — `DELETE /api/v1/viagens/{id}` → 204. */
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Exclui a viagem e os dados dependentes' })
   async excluir(@Param('id', idDeViagem) id: number, @UsuarioAtual() usuario: UsuarioDaRequisicao): Promise<void> {
     await this.viagens.excluir(id, usuario.id);
   }

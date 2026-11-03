@@ -1,5 +1,5 @@
 import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Post, Put, Query, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { PaginacaoQueryDto } from '../../common/dto/paginacao.dto';
 import { RespostaPaginada } from '../../common/dto/resposta-paginada';
 import { HotelNaoEncontradoError, ViagemNaoEncontradaError } from '../../common/errors/dominio.error';
@@ -24,6 +24,7 @@ export class HoteisController {
 
   /** §6.1 — `GET /api/v1/viagens/{viagemId}/hoteis` (paginação offset). */
   @Get('viagens/:viagemId/hoteis')
+  @ApiOperation({ summary: 'Lista as hospedagens da viagem (paginado)' })
   listar(
     @Param('viagemId', idDeViagem) viagemId: number,
     @Query() paginacao: PaginacaoQueryDto,
@@ -35,6 +36,7 @@ export class HoteisController {
   /** §6.2 — `POST /api/v1/viagens/{viagemId}/hoteis` → 201. */
   @Post('viagens/:viagemId/hoteis')
   @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: 'Cria uma hospedagem na viagem' })
   criar(
     @Param('viagemId', idDeViagem) viagemId: number,
     @Body() dto: CriarHotelDto,
@@ -45,12 +47,14 @@ export class HoteisController {
 
   /** §6.3 — `GET /api/v1/hoteis/{id}`. */
   @Get('hoteis/:id')
+  @ApiOperation({ summary: 'Consulta uma hospedagem' })
   buscar(@Param('id', idDeHotel) id: number, @UsuarioAtual() usuario: UsuarioDaRequisicao): Promise<HotelResponse> {
     return this.hoteis.buscar(id, usuario.id);
   }
 
   /** §6.4 — `PUT /api/v1/hoteis/{id}`. */
   @Put('hoteis/:id')
+  @ApiOperation({ summary: 'Atualiza uma hospedagem' })
   atualizar(
     @Param('id', idDeHotel) id: number,
     @Body() dto: AtualizarHotelDto,
@@ -62,6 +66,7 @@ export class HoteisController {
   /** §6.5 — `DELETE /api/v1/hoteis/{id}` → 204. */
   @Delete('hoteis/:id')
   @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Exclui uma hospedagem' })
   async excluir(@Param('id', idDeHotel) id: number, @UsuarioAtual() usuario: UsuarioDaRequisicao): Promise<void> {
     await this.hoteis.excluir(id, usuario.id);
   }

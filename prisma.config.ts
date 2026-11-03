@@ -1,20 +1,27 @@
-import 'dotenv/config';
+import { carregarEnv } from './src/config/load-env';
 import { defineConfig } from 'prisma/config';
 
 /**
  * Configuração do Prisma CLI (v7).
  *
- * O `DATABASE_URL` aponta para o PostgreSQL (Neon). Não há mais fallback para
- * arquivo SQLite: sem a variável, os comandos que falam com o banco (migrate,
- * studio, seed) falham. Os testes injetam um PGlite em memória pelo adapter.
+ * O carregamento de `.env` é o mesmo da API (`src/config/load-env.ts`):
+ * `.env.local` → `.env.<NODE_ENV>` → `.env` em desenvolvimento, e **nenhum
+ * arquivo** em produção (as variáveis vêm do host). Assim o CLI (`migrate`,
+ * `studio`, `seed`) sempre fala com o banco do ambiente corrente.
+ *
+ * A URL direta (`DATABASE_URL_UNPOOLED`) tem preferência para DDL: no Neon a
+ * `DATABASE_URL` é a conexão via pooler e migrations/advisory lock devem rodar
+ * na conexão direta.
  */
+carregarEnv();
+
 export default defineConfig({
   schema: 'prisma/schema.prisma',
   migrations: {
     path: 'prisma/migrations',
-    seed: 'ts-node --transpile-only prisma/seed.ts',
+    seed: 'node -r ts-node/register/transpile-only prisma/seed.ts',
   },
   datasource: {
-    url: process.env.DATABASE_URL,
+    url: (process.env.DATABASE_URL_UNPOOLED ?? '').trim() || process.env.DATABASE_URL,
   },
 });

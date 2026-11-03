@@ -11,6 +11,9 @@ export function criarConfigDeTeste(overrides: Partial<AppConfig> = {}): AppConfi
     apiPrefix: 'api/v1',
     corsOrigins: ['http://localhost:5173'],
     databaseUrl: process.env.DATABASE_URL ?? '',
+    banco: null,
+    swaggerEnabled: false,
+    publicApiUrl: null,
     jwt: { secret: 'segredo-de-testes', expiresIn: '1h', saltRounds: 4 },
     ...overrides,
   };

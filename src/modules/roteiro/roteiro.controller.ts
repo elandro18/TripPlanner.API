@@ -10,7 +10,7 @@ import {
   Put,
   UseGuards,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CardNaoEncontradoError } from '../../common/errors/dominio-extras.error';
 import { DiaNaoEncontradoError, ViagemNaoEncontradaError } from '../../common/errors/dominio.error';
 import { IdParamPipe } from '../../common/pipes/id-param.pipe';
@@ -34,6 +34,7 @@ export class RoteiroController {
   constructor(private readonly roteiro: RoteiroService) {}
 
   @Get('viagens/:viagemId/roteiro')
+  @ApiOperation({ summary: 'Lista os cards de roteiro da viagem' })
   listar(
     @Param('viagemId', idDeViagem) viagemId: number,
     @UsuarioAtual() usuario: UsuarioDaRequisicao,
@@ -43,6 +44,7 @@ export class RoteiroController {
 
   @Post('dias/:diaId/roteiro')
   @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: 'Vincula um item a um dia (cria o card)' })
   criar(
     @Param('diaId', idDeDia) diaId: number,
     @Body() dto: CriarRoteiroDto,
@@ -52,6 +54,7 @@ export class RoteiroController {
   }
 
   @Put('dias/:diaId/roteiro/reordenar')
+  @ApiOperation({ summary: 'Reordena os cards de um dia' })
   reordenar(
     @Param('diaId', idDeDia) diaId: number,
     @Body() dto: ReordenarRoteiroDto,
@@ -61,6 +64,7 @@ export class RoteiroController {
   }
 
   @Put('roteiro/:id')
+  @ApiOperation({ summary: 'Move, reordena, altera horário ou conclui o card' })
   atualizar(
     @Param('id', idDeCard) id: number,
     @Body() dto: AtualizarRoteiroDto,
@@ -71,6 +75,7 @@ export class RoteiroController {
 
   @Delete('roteiro/:id')
   @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Remove o card do dia (o item permanece)' })
   async excluir(
     @Param('id', idDeCard) id: number,
     @UsuarioAtual() usuario: UsuarioDaRequisicao,

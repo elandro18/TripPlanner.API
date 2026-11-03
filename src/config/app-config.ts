@@ -1,4 +1,5 @@
 import { Logger } from '@nestjs/common';
+import { BancoConfig, descricaoDoBanco, validarDatabaseUrl } from './banco-de-dados';
 
 /** Token de injeção da configuração da aplicação. */
 export const APP_CONFIG = 'APP_CONFIG';
@@ -20,6 +21,12 @@ export interface AppConfig {
   readonly corsOrigins: string[];
   /** URL do PostgreSQL (`DATABASE_URL`), usada pelo driver adapter do Prisma. */
   readonly databaseUrl: string;
+  /** Conexão validada (`null` apenas nos testes, que usam PGlite). */
+  readonly banco: BancoConfig | null;
+  /** Swagger UI/JSON habilitado (padrão: ligado fora de produção). */
+  readonly swaggerEnabled: boolean;
+  /** URL pública da API, publicada em `servers` no OpenAPI. */
+  readonly publicApiUrl: string | null;
   readonly jwt: JwtConfig;
 }
 
@@ -51,11 +58,27 @@ function lista(valor: string | undefined, padrao: string[]): string[] {
   return itens.length > 0 ? itens : padrao;
 }
 
+function booleano(valor: string | undefined, padrao: boolean, nome: string): boolean {
+  const bruto = valor?.trim().toLowerCase();
+  if (!bruto) {
+    return padrao;
+  }
+  if (['true', '1', 'yes', 'on'].includes(bruto)) {
+    return true;
+  }
+  if (['false', '0', 'no', 'off'].includes(bruto)) {
+    return false;
+  }
+  throw new Error(`Variável de ambiente ${nome} deve ser true ou false (recebido: "${valor}")`);
+}
+
 /**
  * Monta a configuração a partir das variáveis de ambiente.
  *
- * O `DATABASE_URL` é a connection string do PostgreSQL; não há mais padrão
- * local (o `PrismaService` falha na subida quando ela não está definida).
+ * A `DATABASE_URL` é validada aqui (ver `banco-de-dados.ts`): em produção não
+ * pode ser local, em desenvolvimento não pode ser remota sem `ALLOW_REMOTE_DB`.
+ * Nos testes (`NODE_ENV=test`) a validação é ignorada — o banco é o PGlite em
+ * memória injetado pelo adapter.
  */
 export function carregarConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
   const nodeEnv = texto(env.NODE_ENV, 'development');
@@ -68,12 +91,24 @@ export function carregarConfig(env: NodeJS.ProcessEnv = process.env): AppConfig 
     logger.warn('JWT_SECRET não definido — usando segredo de desenvolvimento. Não usar em produção.');
   }
 
+  const banco = nodeEnv === 'test' ? null : validarDatabaseUrl(env.DATABASE_URL, nodeEnv, env);
+
+  if (banco) {
+    logger.log(`Ambiente "${nodeEnv}" usando banco ${descricaoDoBanco(banco)}`);
+    if (!banco.local && !banco.ssl) {
+      logger.warn(`Banco remoto ${banco.host} sem SSL na URL — o Neon exige sslmode=require.`);
+    }
+  }
+
   return {
     nodeEnv,
     port: inteiro(env.PORT, 3000, 'PORT'),
     apiPrefix: texto(env.API_PREFIX, 'api/v1'),
     corsOrigins: lista(env.CORS_ORIGINS, ['http://localhost:5173']),
     databaseUrl: env.DATABASE_URL?.trim() ?? '',
+    banco,
+    swaggerEnabled: booleano(env.SWAGGER_ENABLED, nodeEnv !== 'production', 'SWAGGER_ENABLED'),
+    publicApiUrl: env.PUBLIC_API_URL?.trim() || null,
     jwt: {
       secret: jwtSecret && jwtSecret.length > 0 ? jwtSecret : JWT_SECRET_DEV,
       expiresIn: texto(env.JWT_EXPIRES_IN, '1h'),

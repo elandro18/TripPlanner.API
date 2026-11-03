@@ -1,11 +1,13 @@
-import 'dotenv/config';
+import { carregarEnv } from '../src/config/load-env';
 import { PrismaPg } from '@prisma/adapter-pg';
 import * as bcrypt from 'bcryptjs';
 import { PrismaClient } from '../src/generated/prisma/client';
 
+carregarEnv();
+
 const url = process.env.DATABASE_URL?.trim();
 if (!url) {
-  throw new Error('DATABASE_URL é obrigatória para rodar o seed (PostgreSQL).');
+  throw new Error('DATABASE_URL é obrigatória para rodar o seed (PostgreSQL). Rode "npm run db:setup:local" se ainda não criou o banco local.');
 }
 const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString: url }) });
 

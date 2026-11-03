@@ -3,6 +3,7 @@ import { AppConfigModule } from './config/app-config.module';
 import { PersistenciaModule } from './persistencia/persistencia.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { DestinosModule } from './modules/destinos/destinos.module';
+import { HealthModule } from './modules/health/health.module';
 import { HoteisModule } from './modules/hoteis/hoteis.module';
 import { LocaisModule } from './modules/locais/locais.module';
 import { ListasModule } from './modules/listas/listas.module';
@@ -14,6 +15,7 @@ import { ViagensModule } from './modules/viagens/viagens.module';
   imports: [
     AppConfigModule,
     PersistenciaModule,
+    HealthModule,
     AuthModule,
     ViagensModule,
     DestinosModule,

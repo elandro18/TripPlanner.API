@@ -11,7 +11,7 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import {
   ItemListaNaoEncontradoError,
   ListaNaoEncontradaError,
@@ -43,6 +43,7 @@ export class ListasController {
   constructor(private readonly listas: ListasService) {}
 
   @Get('listas')
+  @ApiOperation({ summary: 'Lista as listas do usuário (filtro opcional por viagem)' })
   listar(
     @Query() query: ListarListasQueryDto,
     @UsuarioAtual() usuario: UsuarioDaRequisicao,
@@ -52,6 +53,7 @@ export class ListasController {
 
   @Post('listas')
   @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: 'Cria uma lista/checklist' })
   criar(
     @Body() dto: CriarListaDto,
     @UsuarioAtual() usuario: UsuarioDaRequisicao,
@@ -60,6 +62,7 @@ export class ListasController {
   }
 
   @Get('listas/:id')
+  @ApiOperation({ summary: 'Consulta uma lista com seus itens' })
   buscar(
     @Param('id', idDeLista) id: number,
     @UsuarioAtual() usuario: UsuarioDaRequisicao,
@@ -68,6 +71,7 @@ export class ListasController {
   }
 
   @Put('listas/:id')
+  @ApiOperation({ summary: 'Atualiza uma lista' })
   atualizar(
     @Param('id', idDeLista) id: number,
     @Body() dto: AtualizarListaDto,
@@ -78,6 +82,7 @@ export class ListasController {
 
   @Delete('listas/:id')
   @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Exclui a lista e seus itens' })
   async excluir(
     @Param('id', idDeLista) id: number,
     @UsuarioAtual() usuario: UsuarioDaRequisicao,
@@ -86,6 +91,7 @@ export class ListasController {
   }
 
   @Get('listas/:id/itens')
+  @ApiOperation({ summary: 'Lista os itens da lista' })
   listarItens(
     @Param('id', idDeLista) id: number,
     @UsuarioAtual() usuario: UsuarioDaRequisicao,
@@ -95,6 +101,7 @@ export class ListasController {
 
   @Post('listas/:id/itens')
   @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: 'Cria um item na lista' })
   criarItem(
     @Param('id', idDeLista) id: number,
     @Body() dto: CriarListaItemDto,
@@ -104,6 +111,7 @@ export class ListasController {
   }
 
   @Put('listas/:id/itens/reordenar')
+  @ApiOperation({ summary: 'Reordena os itens da lista' })
   reordenarItens(
     @Param('id', idDeLista) id: number,
     @Body() dto: ReordenarListaItensDto,
@@ -113,6 +121,7 @@ export class ListasController {
   }
 
   @Put('itens/:id')
+  @ApiOperation({ summary: 'Atualiza um item (inclui marcar como concluído)' })
   atualizarItem(
     @Param('id', idDeItem) id: number,
     @Body() dto: AtualizarListaItemDto,
@@ -123,6 +132,7 @@ export class ListasController {
 
   @Delete('itens/:id')
   @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Exclui um item' })
   async excluirItem(
     @Param('id', idDeItem) id: number,
     @UsuarioAtual() usuario: UsuarioDaRequisicao,

@@ -10,7 +10,7 @@ import {
   Put,
   UseGuards,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { DestinoNaoEncontradoError } from '../../common/errors/dominio-extras.error';
 import { ViagemNaoEncontradaError } from '../../common/errors/dominio.error';
 import { IdParamPipe } from '../../common/pipes/id-param.pipe';
@@ -33,6 +33,7 @@ export class DestinosController {
   constructor(private readonly destinos: DestinosService) {}
 
   @Get('viagens/:viagemId/destinos')
+  @ApiOperation({ summary: 'Lista os destinos da viagem' })
   listar(
     @Param('viagemId', idDeViagem) viagemId: number,
     @UsuarioAtual() usuario: UsuarioDaRequisicao,
@@ -42,6 +43,7 @@ export class DestinosController {
 
   @Post('viagens/:viagemId/destinos')
   @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: 'Cria um destino na viagem' })
   criar(
     @Param('viagemId', idDeViagem) viagemId: number,
     @Body() dto: CriarDestinoDto,
@@ -51,6 +53,7 @@ export class DestinosController {
   }
 
   @Put('viagens/:viagemId/destinos/reordenar')
+  @ApiOperation({ summary: 'Reordena os destinos da viagem' })
   reordenar(
     @Param('viagemId', idDeViagem) viagemId: number,
     @Body() dto: ReordenarDestinosDto,
@@ -60,6 +63,7 @@ export class DestinosController {
   }
 
   @Get('destinos/:id')
+  @ApiOperation({ summary: 'Consulta um destino' })
   buscar(
     @Param('id', idDeDestino) id: number,
     @UsuarioAtual() usuario: UsuarioDaRequisicao,
@@ -68,6 +72,7 @@ export class DestinosController {
   }
 
   @Put('destinos/:id')
+  @ApiOperation({ summary: 'Atualiza um destino' })
   atualizar(
     @Param('id', idDeDestino) id: number,
     @Body() dto: AtualizarDestinoDto,
@@ -78,6 +83,7 @@ export class DestinosController {
 
   @Delete('destinos/:id')
   @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Exclui um destino' })
   async excluir(
     @Param('id', idDeDestino) id: number,
     @UsuarioAtual() usuario: UsuarioDaRequisicao,
