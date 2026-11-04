@@ -39,6 +39,12 @@ está conectado.
    prefixo `Bearer ` (o esquema já é `bearer`). A autorização persiste entre
    recarregamentos (`persistAuthorization`).
 
+> **Servidor usado pelo "Try it out":** o documento declara `servers: [{ "url": "/" }]`,
+> ou seja, a **mesma origem da página**. Em `localhost:3000/api/docs` as
+> requisições vão para `localhost:3000`; em produção vão para o domínio da Vercel
+> — sem risco de apontar para a máquina local. Se `PUBLIC_API_URL` estiver
+> definida, ela aparece como segunda opção no seletor.
+
 4. **Exercite o domínio.**
    `POST /api/v1/viagens` com o exemplo padrão já preenchido. Guarde o `id`
    retornado e use nos endpoints aninhados (`/viagens/{id}/locais`, `/destinos`,
@@ -80,8 +86,14 @@ Exemplo gerado:
 
 `src/config/swagger.setup.ts` publica:
 
-- `http://localhost:3000` — Local (desenvolvimento)
-- `<PUBLIC_API_URL>` — Produção, quando a variável existe
+- `/` — **Este host** (servidor relativo: o "Try it out" usa a origem da página,
+  tanto em `localhost` quanto em produção)
+- `<PUBLIC_API_URL>` — Produção, quando a variável existe (útil para quem importa
+  o `openapi.json` em Postman/Insomnia)
+
+> A primeira entrada precisa ser a relativa. Quando ela era
+> `http://localhost:3000`, o Swagger em produção enviava as requisições do
+> "Try it out" para a máquina de quem estava testando.
 
 A descrição da página traz o passo a passo de login/Authorize e o ambiente +
 banco em uso.

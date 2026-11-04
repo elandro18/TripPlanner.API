@@ -65,7 +65,10 @@ export function criarDocumentoOpenApi(
       ].join('\n'),
     )
     .setVersion('0.1.0')
-    .addServer(`http://localhost:${config.port}`, 'Local (desenvolvimento)')
+    // Servidor relativo: o "Try it out" usa a MESMA origem da página.
+    // Sem isto, um `http://localhost:3000` fixo seria o padrão e o Swagger em
+    // produção enviaria requisições para a máquina de quem está testando.
+    .addServer('/', 'Este host')
     .addBearerAuth(
       {
         type: 'http',

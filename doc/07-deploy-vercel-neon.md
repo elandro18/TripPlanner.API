@@ -256,6 +256,7 @@ npm run db:deploy
 | `404 NOT_FOUND` em `/api/v1/...` | `vercel.json` ausente ou desatualizado | confirme o `rewrite` com `caminhoOriginal=$1` e redeploy |
 | Corpo `[{"id":"ERR-000",...}]` com `Cannot GET /` | rewrite mascarou o caminho | use o `vercel.json` deste repositório (o caminho vem em `?caminhoOriginal=`) |
 | `/api/docs` em 404 com a API respondendo | `SWAGGER_ENABLED` desligado (padrão em produção) | defina `SWAGGER_ENABLED=true` no escopo Production e redeploy |
+| "Try it out" envia para `http://localhost:3000` | a primeira entrada de `servers` era o host local | ✅ tratado: o documento usa o servidor relativo `/` (mesma origem da página) |
 | `SwaggerUIBundle is not defined` na página | os `.js/.css` de `swagger-ui-dist` não entraram no bundle serverless (só o `swagger-ui-init.js`, que é gerado em memória, carregou) | ✅ tratado: `functions.includeFiles` no `vercel.json` + fallback 302 para o CDN em `src/config/swagger.setup.ts` |
 | `500` com `ERR-099` no corpo | falha na inicialização (env/banco) | veja os **Runtime Logs** da função |
 | `Can't reach database server` | URL errada, projeto Neon suspenso ou região | confira a string e o status do projeto no Neon |

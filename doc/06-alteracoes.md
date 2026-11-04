@@ -122,6 +122,9 @@ os testes automatizados não pegavam — ambos no passo de migrations/seed:
 |---|---|---|---|
 | C-01 | `npm error could not determine executable to run` | `npx` falha quando invocado de dentro de um PowerShell aninhado (o script é chamado por outro PowerShell via `npm run`) | `setup-local-db.ps1` passou a chamar o CLI direto: `node node_modules/prisma/build/index.js` |
 | C-02 | `'ts-node' não é reconhecido como comando` | o Prisma spawna `ts-node` num processo cujo `PATH` não inclui `node_modules/.bin` (o npm injeta isso nos scripts; a invocação direta não) | `prisma.config.ts` passou a usar `node -r ts-node/register/transpile-only prisma/seed.ts`; o script também injeta `node_modules/.bin` no `PATH` |
+| C-03 | `[{"id":"ERR-000","message":"Cannot GET /"}]` em produção | `rewrites` da Vercel para uma **função** mascaram o caminho | `vercel.json` passou a enviar `?caminhoOriginal=$1`; `normalizarUrlDeFuncao()` restaura a URL |
+| C-04 | `SwaggerUIBundle is not defined` em produção | os assets estáticos do `swagger-ui-dist` não entram no bundle serverless (só o `init.js`, gerado em memória) | `functions.includeFiles` no `vercel.json` + fallback `302` para o CDN |
+| C-05 | "Try it out" do Swagger em produção chamando `localhost:3000` | a primeira entrada de `servers` era o host local | `servers: [{ "url": "/" }]` (mesma origem da página) |
 
 Estado após as correções, validado ao vivo:
 
