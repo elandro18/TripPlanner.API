@@ -7,6 +7,7 @@ import {
 } from '@nestjs/swagger';
 import type { Response } from 'express';
 import { APP_CONFIG, AppConfig } from '../../config/app-config';
+import { SWAGGER_PATH } from '../../config/swagger.setup';
 import { PrismaService } from '../../persistencia/prisma/prisma.service';
 import { HealthResponse } from './health.model';
 
@@ -45,6 +46,10 @@ export class HealthController {
       ambiente: this.config.nodeEnv,
       horario: new Date().toISOString(),
       uptimeSegundos: Math.round(process.uptime()),
+      swagger: {
+        habilitado: this.config.swaggerEnabled,
+        caminho: `/${SWAGGER_PATH}`,
+      },
     };
 
     try {

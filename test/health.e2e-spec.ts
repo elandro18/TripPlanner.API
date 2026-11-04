@@ -40,6 +40,8 @@ describe('Health (e2e) — GET /health', () => {
       aplicacao: 'TripPlanner.API',
       ambiente: 'test',
       banco: { status: 'ok', descricao: expect.any(String) },
+      // Em NODE_ENV=test o Swagger é ligado por padrão (só production desliga).
+      swagger: { habilitado: true, caminho: '/api/docs' },
     });
     expect(typeof resposta.body.banco.latenciaMs).toBe('number');
     expect(typeof resposta.body.uptimeSegundos).toBe('number');

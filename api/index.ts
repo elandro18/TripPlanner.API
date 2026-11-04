@@ -3,6 +3,7 @@ import type { IncomingMessage, ServerResponse } from 'node:http';
 import { Logger } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { ExpressAdapter } from '@nestjs/platform-express';
+import { normalizarUrlDeFuncao } from '../src/common/utils/url-vercel';
 import { AppModule } from '../src/app.module';
 import { configurarApp } from '../src/app.setup';
 import { carregarEnv } from '../src/config/load-env';
@@ -15,8 +16,9 @@ import { carregarEnv } from '../src/config/load-env';
  * instância** e reaproveitada entre invocações (inclusive o pool do Prisma) —
  * daí a promise em cache.
  *
- * Roteamento: `vercel.json` reescreve todas as rotas para `/api`, e o Express
- * dentro do Nest resolve o caminho original (`/api/v1/...`).
+ * Roteamento: o `rewrite` do `vercel.json` aponta para esta função e mascara o
+ * caminho original, então ele vem em `?caminhoOriginal=...` e é restaurado por
+ * `normalizarUrlDeFuncao` antes de chegar ao Express/Nest.
  */
 
 type ServidorHttp = (req: IncomingMessage, res: ServerResponse) => void;
@@ -45,6 +47,8 @@ export default async function handler(
       servidor = inicializar();
     }
     const app = await servidor;
+
+    req.url = normalizarUrlDeFuncao(req.url ?? '/');
     app(req, res);
   } catch (erro) {
     // Falha na inicialização (ex.: DATABASE_URL inválida): descarta o cache para

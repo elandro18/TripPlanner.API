@@ -39,6 +39,7 @@ continuam iguais.
 | `api/index.ts` | Entrypoint serverless da Vercel (Nest + `ExpressAdapter`, app em cache por instância) |
 | `vercel.json` | Rewrite de todas as rotas para a função `/api` |
 | `tsconfig.api.json` | Typecheck isolado do handler (`npm run typecheck:api`) |
+| `src/common/utils/url-vercel.ts` | Restaura o caminho mascarado pelo rewrite da Vercel (+ spec) |
 | `doc/*.md` | Esta documentação |
 
 ---
@@ -143,7 +144,8 @@ com o modelo de funções da Vercel.
 | Arquivo | Papel |
 |---|---|
 | `api/index.ts` | Cria a aplicação Nest com `ExpressAdapter` uma vez por instância e reaproveita entre invocações (inclui o pool do Prisma) |
-| `vercel.json` | `rewrites` de `/(.*)` para `/api` |
+| `vercel.json` | Redireciona `/` → `/api/docs` e reescreve `/(.*)` para `/api?caminhoOriginal=$1` (o `rewrite` para função **mascara** o caminho) |
+| `src/common/utils/url-vercel.ts` | Restaura o caminho original a partir de `?caminhoOriginal=` antes de chamar o Express |
 | `tsconfig.api.json` | Typecheck do handler fora do build do Nest (para não mudar o `dist/`) |
 | `src/persistencia/prisma/prisma.service.ts` | `PG_POOL_MAX` no `PrismaPg` (3–5 em serverless) |
 | `src/config/banco-de-dados.ts` | `limiteDoPool()` com validação |
@@ -153,11 +155,16 @@ montando um HTTP server que delega para `api/index.ts`):
 
 ```text
 GET  /api/v1/health           -> 200 status=ok banco=ok
-GET  /api/docs                -> 200
+GET  /api/docs                -> 200 (HTML do Swagger)
+GET  /api/docs-json           -> 200 titulo=TripPlanner.API
 POST /api/v1/auth/login       -> 200 usuario=Ana Beatriz Moraes
-GET  /api/v1/viagens (bearer) -> 200 total=1
+GET  /api/v1/viagens?page&size -> 200 page=0 size=5 total=1
 GET  /api/v1/viagens (sem)    -> 401
+GET  /                        -> 404 (sem rota; a Vercel redireciona para /api/docs)
 ```
+
+> O teste acima simula o rewrite da Vercel: cada requisição chega ao handler
+> como `/api?caminhoOriginal=<caminho>` — exatamente o que acontece em produção.
 
 Conferência adicional: o client gerado pelo Prisma 7 (`src/generated/prisma`)
 tem **apenas arquivos `.ts`** — nenhum binário nativo, o que elimina a

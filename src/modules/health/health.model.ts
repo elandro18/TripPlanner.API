@@ -14,4 +14,11 @@ export interface HealthResponse {
   readonly horario: string;
   readonly uptimeSegundos: number;
   readonly banco: BancoHealth;
+  /** Estado efetivo do Swagger **nesta instância** (reflete o env do deploy). */
+  readonly swagger: SwaggerHealth;
+}
+
+export interface SwaggerHealth {
+  readonly habilitado: boolean;
+  readonly caminho: string;
 }

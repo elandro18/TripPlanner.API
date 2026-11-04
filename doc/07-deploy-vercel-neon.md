@@ -36,7 +36,8 @@ As regras que impedem confusão entre os dois estão em
 | Arquivo | Papel |
 |---|---|
 | `api/index.ts` | Entrypoint serverless: cria a aplicação Nest uma vez por instância e reaproveita entre invocações |
-| `vercel.json` | Reescreve todas as rotas para a função `/api` |
+| `src/common/utils/url-vercel.ts` | Restaura o caminho original mascarado pelo rewrite da Vercel |
+| `vercel.json` | Redireciona `/` para `/api/docs` e reescreve as rotas para a função `/api`, preservando o caminho em `?caminhoOriginal=...` |
 | `tsconfig.api.json` | Typecheck do handler (o build do Nest continua em `src/`) |
 | `src/persistencia/prisma/prisma.service.ts` | Pool `pg` com limite configurável (`PG_POOL_MAX`) |
 | `scripts/migrate-deploy.js` | Aplica migrations no build, pela conexão **direta** do Neon |
@@ -46,6 +47,29 @@ Por que o handler é necessário: a Vercel **não** executa `node dist/main`
 cria a aplicação com `ExpressAdapter` e guarda a promise em cache — o mesmo
 padrão de "singleton por instância" que evita recriar o pool do Prisma a cada
 request.
+
+### 2.1 Por que o rewrite carrega o caminho
+
+Um detalhe que quebra a maioria dos deploys de Nest na Vercel: `rewrites` para
+uma **função** mascaram o caminho. Com `destination: "/api"`, toda requisição
+chega à função como `/` — inclusive `/api/docs`. O sintoma típico é o envelope
+de erro da própria API:
+
+```json
+[{ "id": "ERR-000", "message": "Cannot GET /", "field": null, "detail": "NotFoundException" }]
+```
+
+Solução adotada:
+
+```json
+{ "rewrites": [{ "source": "/(.*)", "destination": "/api?caminhoOriginal=$1" }] }
+```
+
+O `$1` carrega o caminho real; `normalizarUrlDeFuncao()`
+(`src/common/utils/url-vercel.ts`) reconstrói a URL antes de entregar ao
+Express/Nest. Os demais query params (`?page=0&size=5`) seguem junto.
+
+`GET /` não é rota da API: redireciona para `/api/docs`.
 
 **Sem engine nativa:** o generator `prisma-client` (Prisma 7) + driver adapter
 `@prisma/adapter-pg` geram apenas TypeScript — nenhum `.node`/`.so` para
@@ -153,7 +177,10 @@ flowchart TD
 # 1. saúde (público, sem token)
 Invoke-RestMethod https://sua-api.vercel.app/api/v1/health
 
-# 2. criar a primeira conta
+# 2. Swagger (somente com SWAGGER_ENABLED=true)
+Start-Process https://sua-api.vercel.app/api/docs
+
+# 3. criar a primeira conta
 Invoke-RestMethod https://sua-api.vercel.app/api/v1/auth/registrar -Method Post `
   -ContentType 'application/json' `
   -Body '{"nome":"Admin","email":"admin@exemplo.com","senha":"senha-forte"}'
@@ -199,7 +226,9 @@ npm run db:deploy
 
 | Sintoma | Causa provável | Solução |
 |---|---|---|
-| `404 NOT_FOUND` em `/api/v1/...` | rewrite não aplicado | confirme `vercel.json` na raiz e redeploy |
+| `404 NOT_FOUND` em `/api/v1/...` | `vercel.json` ausente ou desatualizado | confirme o `rewrite` com `caminhoOriginal=$1` e redeploy |
+| Corpo `[{"id":"ERR-000",...}]` com `Cannot GET /` | rewrite mascarou o caminho | use o `vercel.json` deste repositório (o caminho vem em `?caminhoOriginal=`) |
+| `/api/docs` em 404 com a API respondendo | `SWAGGER_ENABLED` desligado (padrão em produção) | defina `SWAGGER_ENABLED=true` no escopo Production e redeploy |
 | `500` com `ERR-099` no corpo | falha na inicialização (env/banco) | veja os **Runtime Logs** da função |
 | `Can't reach database server` | URL errada, projeto Neon suspenso ou região | confira a string e o status do projeto no Neon |
 | `too many connections` | pool alto × muitas instâncias | `PG_POOL_MAX=3` e use a URL **pooled** |
@@ -246,6 +275,7 @@ ativo) — elimina o cold start de banco, que é o principal fator de latência.
 - [ ] `JWT_SECRET` gerado e cadastrado
 - [ ] `CORS_ORIGINS` com o domínio do frontend
 - [ ] `PG_POOL_MAX=5`
+- [ ] `SWAGGER_ENABLED=true` (apenas se quiser testar pela UI em produção)
 - [ ] Repositório importado na Vercel (preset **Other**)
 - [ ] Build Command = `npm run build`
 - [ ] Deploy executado sem erro de migration
