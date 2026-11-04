@@ -144,7 +144,8 @@ com o modelo de funções da Vercel.
 | Arquivo | Papel |
 |---|---|
 | `api/index.ts` | Cria a aplicação Nest com `ExpressAdapter` uma vez por instância e reaproveita entre invocações (inclui o pool do Prisma) |
-| `vercel.json` | Redireciona `/` → `/api/docs` e reescreve `/(.*)` para `/api?caminhoOriginal=$1` (o `rewrite` para função **mascara** o caminho) |
+| `vercel.json` | Redireciona `/` → `/api/docs`, reescreve rotas para `/api?caminhoOriginal=$1` e força `includeFiles` do `swagger-ui-dist` |
+| `src/config/swagger.setup.ts` | Fallback 302 para o CDN quando os assets do Swagger UI não existem no bundle |
 | `src/common/utils/url-vercel.ts` | Restaura o caminho original a partir de `?caminhoOriginal=` antes de chamar o Express |
 | `tsconfig.api.json` | Typecheck do handler fora do build do Nest (para não mudar o `dist/`) |
 | `src/persistencia/prisma/prisma.service.ts` | `PG_POOL_MAX` no `PrismaPg` (3–5 em serverless) |

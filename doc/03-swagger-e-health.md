@@ -16,6 +16,11 @@ está conectado.
 
 > O Swagger fica em `/api/docs` (fora do prefixo `/api/v1`) de propósito: é
 > documentação, não contrato de domínio.
+>
+> **Em produção (serverless):** se o bundle da Vercel não incluir os arquivos do
+> `swagger-ui-dist`, a própria API responde `302` para o mesmo arquivo no CDN
+> (jsDelivr). Detalhes em
+> [07 — Deploy §2.2](07-deploy-vercel-neon.md#22-por-que-o-swagger-ui-pode-perder-os-assets).
 
 ---
 

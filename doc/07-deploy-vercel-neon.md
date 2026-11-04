@@ -71,6 +71,33 @@ Express/Nest. Os demais query params (`?page=0&size=5`) seguem junto.
 
 `GET /` não é rota da API: redireciona para `/api/docs`.
 
+### 2.2 Por que o Swagger UI pode perder os assets
+
+O HTML gerado pelo `swagger-ui-express` referencia os arquivos com caminho
+**relativo** (`./swagger-ui-bundle.js`, `./swagger-ui.css`). O
+`swagger-ui-init.js` é gerado em memória — por isso ele costuma carregar mesmo
+quando os demais falham.
+
+No bundle serverless, arquivos lidos via `fs` em runtime (é o caso de
+`node_modules/swagger-ui-dist`) podem **não ser incluídos** pela análise de
+dependências da Vercel. Sintoma no navegador:
+
+```text
+Uncaught ReferenceError: SwaggerUIBundle is not defined
+    at /api/docs/swagger-ui-init.js
+```
+
+Mitigação dupla (as duas já aplicadas):
+
+1. `vercel.json` → `functions["api/index.ts"].includeFiles` com
+   `node_modules/swagger-ui-dist/**` (força a inclusão dos assets);
+2. `src/config/swagger.setup.ts` → middleware de fallback que responde `302`
+   para o mesmo arquivo no CDN (jsDelivr, versão fixa) **somente quando** o
+   `swagger-ui-express` não encontrou o arquivo (`next()`).
+
+Localmente o fallback nunca dispara: os arquivos existem em `node_modules` e são
+servidos pelo próprio `swagger-ui-express`.
+
 **Sem engine nativa:** o generator `prisma-client` (Prisma 7) + driver adapter
 `@prisma/adapter-pg` geram apenas TypeScript — nenhum `.node`/`.so` para
 empacotar. Isso elimina a maior fonte de problemas de Prisma em serverless.
@@ -229,6 +256,7 @@ npm run db:deploy
 | `404 NOT_FOUND` em `/api/v1/...` | `vercel.json` ausente ou desatualizado | confirme o `rewrite` com `caminhoOriginal=$1` e redeploy |
 | Corpo `[{"id":"ERR-000",...}]` com `Cannot GET /` | rewrite mascarou o caminho | use o `vercel.json` deste repositório (o caminho vem em `?caminhoOriginal=`) |
 | `/api/docs` em 404 com a API respondendo | `SWAGGER_ENABLED` desligado (padrão em produção) | defina `SWAGGER_ENABLED=true` no escopo Production e redeploy |
+| `SwaggerUIBundle is not defined` na página | os `.js/.css` de `swagger-ui-dist` não entraram no bundle serverless (só o `swagger-ui-init.js`, que é gerado em memória, carregou) | ✅ tratado: `functions.includeFiles` no `vercel.json` + fallback 302 para o CDN em `src/config/swagger.setup.ts` |
 | `500` com `ERR-099` no corpo | falha na inicialização (env/banco) | veja os **Runtime Logs** da função |
 | `Can't reach database server` | URL errada, projeto Neon suspenso ou região | confira a string e o status do projeto no Neon |
 | `too many connections` | pool alto × muitas instâncias | `PG_POOL_MAX=3` e use a URL **pooled** |

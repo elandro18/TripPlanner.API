@@ -1,9 +1,26 @@
 import { INestApplication } from '@nestjs/common';
 import { DocumentBuilder, OpenAPIObject, SwaggerModule } from '@nestjs/swagger';
+import type { NextFunction, Request, Response } from 'express';
 import { BancoConfig } from './banco-de-dados';
 
 /** Caminho da UI do Swagger (independente do prefixo global da API). */
 export const SWAGGER_PATH = 'api/docs';
+
+/**
+ * Versão do `swagger-ui-dist` usada no fallback de CDN.
+ * Mantenha em sincronia com a dependência de `swagger-ui-express`.
+ */
+const VERSAO_SWAGGER_UI = '5.17.14';
+const CDN_SWAGGER_UI = `https://cdn.jsdelivr.net/npm/swagger-ui-dist@${VERSAO_SWAGGER_UI}`;
+
+/** Arquivos estáticos que o HTML do Swagger UI referencia com caminho relativo. */
+const ASSETS_SWAGGER_UI = new Set([
+  'swagger-ui.css',
+  'swagger-ui-bundle.js',
+  'swagger-ui-standalone-preset.js',
+  'favicon-16x16.png',
+  'favicon-32x32.png',
+]);
 
 /** Recorte da configuração necessário para montar a documentação. */
 export interface SwaggerConfig {
@@ -81,6 +98,7 @@ export function criarDocumentoOpenApi(
  */
 export function configurarSwagger(app: INestApplication, config: SwaggerConfig): void {
   const documento = criarDocumentoOpenApi(app, config);
+
   SwaggerModule.setup(SWAGGER_PATH, app, documento, {
     customSiteTitle: 'TripPlanner.API — Swagger',
     swaggerOptions: {
@@ -89,5 +107,25 @@ export function configurarSwagger(app: INestApplication, config: SwaggerConfig):
       filter: true,
       tryItOutEnabled: true,
     },
+  });
+
+  // Em ambientes serverless (Vercel) os arquivos estáticos do `swagger-ui-dist`
+  // podem não entrar no bundle da função: o HTML e o `swagger-ui-init.js` (gerado
+  // em memória) carregam, mas o bundle JavaScript dá 404 — e o navegador falha
+  // com "SwaggerUIBundle is not defined".
+  //
+  // Este middleware roda somente quando o arquivo não foi servido pelo
+  // `swagger-ui-express` (que chama `next()` quando não encontra) e redireciona
+  // para o mesmo arquivo no CDN. Localmente nada muda: o arquivo existe e é
+  // servido antes de chegar aqui.
+  app.use(`/${SWAGGER_PATH}`, (req: Request, res: Response, next: NextFunction) => {
+    const arquivo = req.path.replace(/^\/+/, '');
+
+    if (!ASSETS_SWAGGER_UI.has(arquivo)) {
+      next();
+      return;
+    }
+
+    res.redirect(302, `${CDN_SWAGGER_UI}/${arquivo}`);
   });
 }
